@@ -19,7 +19,7 @@ class AppTest {
 
     @Test
     fun testRegexMatch() {
-        val res = TokenMatcher("def", PleaseTypes.IDENT).match("foo = def _foo_bar1():\npass", 10)
+        val res = TokenMatcher("def", PleaseTypes.IDENT).match("foo = def _foo_bar1():\npass", 6)
         assertTrue(res is TokenMatchResult.Match)
     }
 

@@ -48,7 +48,7 @@ import javax.swing.JComponent
 import javax.swing.JTextField
 
 
-val pleaseIcon = IconLoader.getIcon("/icons/please.png")
+val pleaseIcon = IconLoader.getIcon("/icons/please.png", PleaseFileType.javaClass)
 object PleaseLanguage : Language("Please")
 
 object PleaseFileType : LanguageFileType(PleaseLanguage) {
@@ -88,9 +88,9 @@ object EOL : IElementType("EOL", PleaseLanguage)
 
 val matchers = listOf(
     // Operators
-    TokenMatcher("+", PleaseTypes.PLUS),
+    TokenMatcher("\\+", PleaseTypes.PLUS),
     TokenMatcher("-", PleaseTypes.MINUS),
-    TokenMatcher("*", PleaseTypes.TIMES),
+    TokenMatcher("\\*", PleaseTypes.TIMES),
     TokenMatcher("/", PleaseTypes.DIVIDE),
     TokenMatcher("%", PleaseTypes.PERCENT),
     TokenMatcher("<", PleaseTypes.LEFT_CHEV),
@@ -177,7 +177,7 @@ class PleaseLexer : LexerBase() {
         }
 
         // Check we haven't exceeded the end of the buffer
-        if(pos + currentTokenLength >= endOffset) {
+        if(pos + currentTokenLength > endOffset) {
             currentTokenLength = 0
             currentToken = null
             return
@@ -251,7 +251,9 @@ class PleaseLexer : LexerBase() {
         locateToken() // make sure we've set the current token; it's probably already located, but I don't trust this stateful API
         pos += currentTokenLength
         currentToken = null
-        locateToken() // locate the next token
+        if (pos < endOffset) {
+            locateToken() // locate the next token
+        }
     }
 
 
@@ -342,7 +344,7 @@ class PleaseParserDefinition : ParserDefinition {
         return PleaseFile(viewProvider)
     }
 
-    override fun spaceExistenceTypeBetweenTokens(left: ASTNode?, right: ASTNode?): SpaceRequirements? {
+    override fun spaceExistenceTypeBetweenTokens(left: ASTNode?, right: ASTNode?): SpaceRequirements {
         return SpaceRequirements.MAY
     }
 
@@ -387,6 +389,8 @@ class PleaseSyntaxHighlighter : SyntaxHighlighterBase() {
         }
         return arrayOf()
     }
+
+
 }
 
 class PleaseSyntaxHighlighterFactory : SyntaxHighlighterFactory() {
