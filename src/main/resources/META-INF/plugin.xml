@@ -1,0 +1,28 @@
+<idea-plugin>
+    <id>org.example.please-intellij</id>
+    <name>please.build</name>
+    <vendor email="please@thoughtmachine.net" url="https://please.build">Thought Machine</vendor>
+
+    <description><![CDATA[
+        Plugin supporting the Please build system.
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <fileType name="Please" implementationClass="org.intellij.plugin.please.PleaseFileType"
+                  fieldName="INSTANCE" language="Please" extensions="plz;build_defs;build_def" fileNames="BUILD"/>
+        <lang.parserDefinition language="Please"
+                               implementationClass="org.intellij.plugin.please.PleaseParserDefinition"/>
+        <lang.syntaxHighlighterFactory language="Please"
+                                       implementationClass="org.intellij.plugin.please.PleaseSyntaxHighlighterFactory"/>
+        <runLineMarkerContributor language="Please"
+                                        implementationClass="org.intellij.plugin.please.PleaseLineMarkerProvider"/>
+        <configurationType implementation="org.intellij.plugin.please.PleaseRunConfigurationType"/>
+
+    </extensions>
+
+    <actions>
+        <!-- Add your actions here -->
+    </actions>
+</idea-plugin>
