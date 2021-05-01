@@ -20,7 +20,17 @@
                                         implementationClass="org.intellij.plugin.please.PleaseLineMarkerProvider"/>
         <configurationType implementation="org.intellij.plugin.please.PleaseRunConfigurationType"/>
 
+        <preloadingActivity implementation="org.intellij.plugin.please.PleaseLSPPreloadActivity"
+                            id="org.intellij.plugin.please.PleaseLSPPreloadActivity" />
+        <completion.contributor implementationClass="org.wso2.lsp4intellij.contributors.LSPCompletionContributor"
+                                id="LSPCompletionContributor" language="Please"/>
     </extensions>
+
+    <application-components>
+        <component>
+            <implementation-class>org.wso2.lsp4intellij.IntellijLanguageClient</implementation-class>
+        </component>
+    </application-components>
 
     <actions>
         <!-- Add your actions here -->

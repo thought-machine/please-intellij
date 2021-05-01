@@ -22,11 +22,13 @@ import com.intellij.lexer.Lexer
 import com.intellij.lexer.LexerBase
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.application.PreloadingActivity
 import com.intellij.openapi.editor.DefaultLanguageHighlighterColors
 import com.intellij.openapi.editor.HighlighterColors
 import com.intellij.openapi.editor.colors.TextAttributesKey
 import com.intellij.openapi.fileTypes.*
 import com.intellij.openapi.options.SettingsEditor
+import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.IconLoader
 import com.intellij.openapi.vfs.VirtualFile
@@ -42,6 +44,8 @@ import com.intellij.util.Function
 import org.intellij.plugin.please.parser.PleaseParser
 import org.intellij.plugin.please.psi.PleaseFunctionCall
 import org.intellij.plugin.please.psi.PleaseTypes
+import org.wso2.lsp4intellij.IntellijLanguageClient
+import org.wso2.lsp4intellij.client.languageserver.serverdefinition.RawCommandServerDefinition
 import java.nio.file.Path
 import javax.swing.Icon
 import javax.swing.JComponent
@@ -84,10 +88,11 @@ class TokenMatcher(regex: String, var type: IElementType) {
 }
 
 object EOL : IElementType("EOL", PleaseLanguage)
-
+object DOC_COMMENT : IElementType("DOC_COMMENT", PleaseLanguage)
 
 val matchers = listOf(
     // Operators
+    TokenMatcher("\"\"\"", DOC_COMMENT),
     TokenMatcher("\\+", PleaseTypes.PLUS),
     TokenMatcher("-", PleaseTypes.MINUS),
     TokenMatcher("\\*", PleaseTypes.TIMES),
@@ -501,5 +506,18 @@ class PleaseLaunchState(private var action: String, private var target: String, 
         cmd.setWorkDirectory(projectRoot)
         cmd.withRedirectErrorStream(true)
         return ProcessHandlerFactoryImpl.getInstance().createColoredProcessHandler(cmd)
+    }
+}
+
+class PleaseLSPPreloadActivity : PreloadingActivity() {
+    override fun preload(indicator: ProgressIndicator) {
+        // TODO(jpoole): use please to download this via //:_please:lsp
+        val home = System.getProperty("user.home")
+        IntellijLanguageClient.addServerDefinition(
+            RawCommandServerDefinition(
+                "plz",
+                arrayOf("$home/.please/build_langserver")
+            )
+        )
     }
 }
