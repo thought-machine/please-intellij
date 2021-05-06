@@ -8,6 +8,7 @@ import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.execution.impl.RunManagerImpl
 import com.intellij.execution.impl.RunnerAndConfigurationSettingsImpl
 import com.intellij.execution.lineMarker.RunLineMarkerContributor
+import com.intellij.execution.process.OSProcessHandler
 import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessHandlerFactoryImpl
 import com.intellij.execution.runners.ExecutionEnvironment
@@ -477,7 +478,7 @@ class PleaseLineMarkerProvider : RunLineMarkerContributor() {
         val name = parent.functionCallParamList.find { it.ident?.text == "name" }?.expression?.value?.strLit?.text
         val file = element.containingFile
         if (name != null && file is PleaseFile) {
-            val target = "//${file.getPleasePackage()}:${name.trim { it == '\"'}}"
+            val target = "//${file.getPleasePackage()}:${name.trim { it == '\"' || it == '\''} }"
             return Info(
                 AllIcons.Actions.Execute, Function { "run $target" },
                 PleaseAction(element.project, "run", target, AllIcons.Actions.Execute),
@@ -550,9 +551,8 @@ class PleaseRunConfiguration(project: Project, factory: ConfigurationFactory, va
 
 class PleaseLaunchState(private var action: String, private var target: String, private var projectRoot : String, environment: ExecutionEnvironment) : CommandLineState(environment) {
     override fun startProcess(): ProcessHandler {
-        val cmd = GeneralCommandLine("plz", action, target)
+        val cmd = PtyCommandLine(mutableListOf("plz", "-p", "-v", "notice", action, target))
         cmd.setWorkDirectory(projectRoot)
-        cmd.withRedirectErrorStream(true)
         return ProcessHandlerFactoryImpl.getInstance().createColoredProcessHandler(cmd)
     }
 }
