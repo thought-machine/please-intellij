@@ -76,9 +76,27 @@ sealed class TokenMatchResult {
     abstract fun len() : Int
 }
 
-class TokenMatcher(regex: String, var type: IElementType) {
+interface TokenMatcher {
+    fun match(buffer: CharSequence, pos: Int): TokenMatchResult
+}
+
+class StringMatcher(private var string: String, private var type: IElementType) : TokenMatcher {
+    override fun match(buffer: CharSequence, pos: Int) = when {
+        buffer.length < pos + string.length -> {
+            TokenMatchResult.NoMatch
+        }
+        buffer.subSequence(pos, pos+string.length).toString() == string -> {
+            TokenMatchResult.Match(string, type)
+        }
+        else -> {
+            TokenMatchResult.NoMatch
+        }
+    }
+}
+
+class RegexMatcher(regex: String, private var type: IElementType) : TokenMatcher {
     private var r = Regex("^$regex")
-    fun match(buffer: CharSequence, pos: Int): TokenMatchResult {
+    override fun match(buffer: CharSequence, pos: Int): TokenMatchResult {
         val res = r.find(buffer.subSequence(pos, buffer.length))
         if (res != null) {
             return TokenMatchResult.Match(res.value, type)
@@ -90,52 +108,52 @@ class TokenMatcher(regex: String, var type: IElementType) {
 object EOL : IElementType("EOL", PleaseLanguage)
 object DOC_COMMENT : IElementType("DOC_COMMENT", PleaseLanguage)
 
-val matchers = listOf(
+val matchers = listOf<TokenMatcher>(
     // Operators
-    TokenMatcher("\"\"\"", DOC_COMMENT),
-    TokenMatcher("\\+", PleaseTypes.PLUS),
-    TokenMatcher("-", PleaseTypes.MINUS),
-    TokenMatcher("\\*", PleaseTypes.TIMES),
-    TokenMatcher("/", PleaseTypes.DIVIDE),
-    TokenMatcher("%", PleaseTypes.PERCENT),
-    TokenMatcher("<", PleaseTypes.LEFT_CHEV),
-    TokenMatcher(">", PleaseTypes.RIGHT_CHEV),
-    TokenMatcher("and", PleaseTypes.AND),
-    TokenMatcher("or", PleaseTypes.OR),
-    TokenMatcher("is", PleaseTypes.IS),
-    TokenMatcher("not", PleaseTypes.NOT),
-    TokenMatcher("in", PleaseTypes.IN),
-    TokenMatcher("==", PleaseTypes.EQUALS),
-    TokenMatcher("!=", PleaseTypes.NOT_EQUALS),
-    TokenMatcher(">=", PleaseTypes.GTE),
-    TokenMatcher("<=", PleaseTypes.LTE),
+    StringMatcher("\"\"\"", DOC_COMMENT),
+    StringMatcher("+", PleaseTypes.PLUS),
+    StringMatcher("-", PleaseTypes.MINUS),
+    StringMatcher("*", PleaseTypes.TIMES),
+    StringMatcher("/", PleaseTypes.DIVIDE),
+    StringMatcher("%", PleaseTypes.PERCENT),
+    StringMatcher("<", PleaseTypes.LEFT_CHEV),
+    StringMatcher(">", PleaseTypes.RIGHT_CHEV),
+    StringMatcher("and", PleaseTypes.AND),
+    StringMatcher("or", PleaseTypes.OR),
+    StringMatcher("is", PleaseTypes.IS),
+    StringMatcher("not", PleaseTypes.NOT),
+    StringMatcher("in", PleaseTypes.IN),
+    StringMatcher("==", PleaseTypes.EQUALS),
+    StringMatcher("!=", PleaseTypes.NOT_EQUALS),
+    StringMatcher(">=", PleaseTypes.GTE),
+    StringMatcher("<=", PleaseTypes.LTE),
 
     // Keywords
-    TokenMatcher("=", PleaseTypes.EQ),
-    TokenMatcher(":", PleaseTypes.COLON),
-    TokenMatcher(",", PleaseTypes.COMMA),
-    TokenMatcher("pass", PleaseTypes.PASS),
-    TokenMatcher("continue", PleaseTypes.CONTINUE),
-    TokenMatcher("def", PleaseTypes.DEF),
-    TokenMatcher("False", PleaseTypes.FALSE_LIT),
-    TokenMatcher("True", PleaseTypes.TRUE_LIT),
+    StringMatcher("=", PleaseTypes.EQ),
+    StringMatcher(":", PleaseTypes.COLON),
+    StringMatcher(",", PleaseTypes.COMMA),
+    StringMatcher("pass", PleaseTypes.PASS),
+    StringMatcher("continue", PleaseTypes.CONTINUE),
+    StringMatcher("def", PleaseTypes.DEF),
+    StringMatcher("False", PleaseTypes.FALSE_LIT),
+    StringMatcher("True", PleaseTypes.TRUE_LIT),
 
     // Syntax
-    TokenMatcher("\\[", PleaseTypes.LBRACK),
-    TokenMatcher("\\]", PleaseTypes.RBRACK),
-    TokenMatcher("\\{", PleaseTypes.LBRACE),
-    TokenMatcher("\\}", PleaseTypes.RBRACE),
-    TokenMatcher("\\(", PleaseTypes.LPAREN),
-    TokenMatcher("\\)", PleaseTypes.RPAREN),
-    TokenMatcher("\\|", PleaseTypes.PIPE),
+    RegexMatcher("\\[", PleaseTypes.LBRACK),
+    RegexMatcher("\\]", PleaseTypes.RBRACK),
+    RegexMatcher("\\{", PleaseTypes.LBRACE),
+    RegexMatcher("\\}", PleaseTypes.RBRACE),
+    RegexMatcher("\\(", PleaseTypes.LPAREN),
+    RegexMatcher("\\)", PleaseTypes.RPAREN),
+    RegexMatcher("\\|", PleaseTypes.PIPE),
 
     // Regex matchers
-    TokenMatcher("(#)[^\\r\\n]*", PleaseTypes.COMMENT),
-    TokenMatcher("(\n|\r|\r\n)", EOL),
-    TokenMatcher(" +", TokenType.WHITE_SPACE),
-    TokenMatcher("([a-zA-Z]+|_)([a-zA-Z]|[0-9]|_)*", PleaseTypes.IDENT),
-    TokenMatcher("[0-9]+", PleaseTypes.INT_LIT),
-    TokenMatcher("('([^'\\\\]|\\\\.)*'|\\\"([^\\\"\\\\]|\\\\.)*\\\")", PleaseTypes.STR_LIT)
+    RegexMatcher("(#)[^\\r\\n]*", PleaseTypes.COMMENT),
+    RegexMatcher("(\n|\r|\r\n)", EOL),
+    RegexMatcher(" +", TokenType.WHITE_SPACE),
+    RegexMatcher("([a-zA-Z]+|_)([a-zA-Z]|[0-9]|_)*", PleaseTypes.IDENT),
+    RegexMatcher("[0-9]+", PleaseTypes.INT_LIT),
+    RegexMatcher("('([^'\\\\]|\\\\.)*'|\\\"([^\\\"\\\\]|\\\\.)*\\\")", PleaseTypes.STR_LIT)
 )
 
 

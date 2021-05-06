@@ -9,7 +9,7 @@ import org.junit.Test
 class AppTest {
     @Test
     fun testBasicMatch() {
-        val res = TokenMatcher("def", PleaseTypes.DEF).match("foo = def foo():\npass", 6)
+        val res = RegexMatcher("def", PleaseTypes.DEF).match("foo = def foo():\npass", 6)
         if(res is TokenMatchResult.Match) {
             assertEquals("def", res.match)
         } else {
@@ -19,7 +19,7 @@ class AppTest {
 
     @Test
     fun testRegexMatch() {
-        val res = TokenMatcher("def", PleaseTypes.IDENT).match("foo = def _foo_bar1():\npass", 6)
+        val res = RegexMatcher("def", PleaseTypes.IDENT).match("foo = def _foo_bar1():\npass", 6)
         assertTrue(res is TokenMatchResult.Match)
     }
 
@@ -57,5 +57,21 @@ class AppTest {
         assertEquals(PleaseTypes.CLOSE_BLOCK, lexer.tokenType)
         assertEquals("\n", lexer.tokenText)
 
+    }
+
+    @Test
+    fun testStringMatcher() {
+        val lexer = PleaseLexer()
+        val program  = "def ="
+        lexer.start(program, 0, program.length)
+        assertEquals("def", lexer.tokenText)
+        assertEquals(PleaseTypes.DEF, lexer.tokenType)
+
+        lexer.advance()
+        assertEquals(TokenType.WHITE_SPACE, lexer.tokenType)
+
+        lexer.advance()
+        assertEquals(PleaseTypes.EQ, lexer.tokenType)
+        assertEquals("=", lexer.tokenText)
     }
 }
