@@ -42,26 +42,27 @@
 }
 
 pleaseFile ::= (statement)*
-statement ::= (functionDef | expression | assignment | PASS | CONTINUE)
+statement ::= (functionDef | expression | assignment | ifStatement | PASS | CONTINUE)
 
 assignment ::= IDENT (COMMA IDENT)* EQ expression
 
+ifStatement ::= IF expression OPEN_BLOCK statement+ ( ELIF expression OPEN_BLOCK statement+ )* [ELSE expression OPEN_BLOCK statement+ ]
 
-functionDef ::= DEF IDENT LPAREN OPEN_BLOCK*  [ functionDefParam (COMMA functionDefParam)* ] COMMA? CLOSE_BLOCK* RPAREN COLON OPEN_BLOCK statement+ CLOSE_BLOCK
-functionDefParam ::= IDENT [COLON type [PIPE type+] [ EQ expression] ]
+functionDef ::= DEF IDENT LPAREN [ functionDefParam (COMMA functionDefParam)* ] COMMA? CLOSE_BLOCK* RPAREN OPEN_BLOCK statement+ CLOSE_BLOCK
+functionDefParam ::= IDENT [COLON type [PIPE type+] ] [ EQ expression]
 type ::= IDENT
 
 expression ::= [ MINUS | NOT ] value [operator expression] [ IF expression ELSE expression ]
 value ::= functionCall | INT_LIT | STR_LIT | listLit | dictLit | boolLit
 
 
-functionCall ::= IDENT LPAREN OPEN_BLOCK* [ functionCallParam (COMMA functionCallParam)* ] COMMA? CLOSE_BLOCK* RPAREN
+functionCall ::= IDENT LPAREN [ functionCallParam (COMMA functionCallParam)* ] COMMA? CLOSE_BLOCK* RPAREN
 functionCallParam ::= (expression | IDENT "=" expression)
 
 
 boolLit ::= TRUE_LIT | FALSE_LIT
-listLit ::= LBRACK OPEN_BLOCK* [expression [ (COMMA expression)* ] ] COMMA? CLOSE_BLOCK* RBRACK
-dictLit ::= LBRACE OPEN_BLOCK* [STR_LIT COLON expression [COMMA STR_LIT COLON expression]] COMMA? CLOSE_BLOCK* RBRACE
+listLit ::= LBRACK [expression [ (COMMA expression)* ] ] COMMA? CLOSE_BLOCK* RBRACK
+dictLit ::= LBRACE [STR_LIT COLON expression [COMMA STR_LIT COLON expression]] COMMA? CLOSE_BLOCK* RBRACE
 
 operator ::= (PLUS | MINUS | TIMES | DIVIDE | PERCENT | LEFT_CHEV | RIGHT_CHEV | AND | OR |
             IS | IS NOT | IN | NOT IN | EQUALS | NOT_EQUALS | GTE | LTE | PIPE)

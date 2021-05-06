@@ -11,14 +11,14 @@ import static org.intellij.plugin.please.psi.PleaseTypes.*;
 import com.intellij.extapi.psi.ASTWrapperPsiElement;
 import org.intellij.plugin.please.psi.*;
 
-public class PleaseStatementImpl extends ASTWrapperPsiElement implements PleaseStatement {
+public class PleaseIfStatementImpl extends ASTWrapperPsiElement implements PleaseIfStatement {
 
-  public PleaseStatementImpl(@NotNull ASTNode node) {
+  public PleaseIfStatementImpl(@NotNull ASTNode node) {
     super(node);
   }
 
   public void accept(@NotNull PleaseVisitor visitor) {
-    visitor.visitStatement(this);
+    visitor.visitIfStatement(this);
   }
 
   @Override
@@ -28,27 +28,15 @@ public class PleaseStatementImpl extends ASTWrapperPsiElement implements PleaseS
   }
 
   @Override
-  @Nullable
-  public PleaseAssignment getAssignment() {
-    return findChildByClass(PleaseAssignment.class);
+  @NotNull
+  public List<PleaseExpression> getExpressionList() {
+    return PsiTreeUtil.getChildrenOfTypeAsList(this, PleaseExpression.class);
   }
 
   @Override
-  @Nullable
-  public PleaseExpression getExpression() {
-    return findChildByClass(PleaseExpression.class);
-  }
-
-  @Override
-  @Nullable
-  public PleaseFunctionDef getFunctionDef() {
-    return findChildByClass(PleaseFunctionDef.class);
-  }
-
-  @Override
-  @Nullable
-  public PleaseIfStatement getIfStatement() {
-    return findChildByClass(PleaseIfStatement.class);
+  @NotNull
+  public List<PleaseStatement> getStatementList() {
+    return PsiTreeUtil.getChildrenOfTypeAsList(this, PleaseStatement.class);
   }
 
 }

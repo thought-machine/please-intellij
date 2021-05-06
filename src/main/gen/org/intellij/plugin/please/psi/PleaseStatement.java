@@ -16,4 +16,7 @@ public interface PleaseStatement extends PsiElement {
   @Nullable
   PleaseFunctionDef getFunctionDef();
 
+  @Nullable
+  PleaseIfStatement getIfStatement();
+
 }

@@ -16,6 +16,7 @@ public interface PleaseTypes {
   IElementType FUNCTION_CALL_PARAM = new PleaseElementType("FUNCTION_CALL_PARAM");
   IElementType FUNCTION_DEF = new PleaseElementType("FUNCTION_DEF");
   IElementType FUNCTION_DEF_PARAM = new PleaseElementType("FUNCTION_DEF_PARAM");
+  IElementType IF_STATEMENT = new PleaseElementType("IF_STATEMENT");
   IElementType LIST_LIT = new PleaseElementType("LIST_LIT");
   IElementType OPERATOR = new PleaseElementType("OPERATOR");
   IElementType STATEMENT = new PleaseElementType("STATEMENT");
@@ -31,6 +32,7 @@ public interface PleaseTypes {
   IElementType DEF = new PleaseTokenType("def");
   IElementType DIVIDE = new PleaseTokenType("DIVIDE");
   IElementType DOC_COMMENT = new PleaseTokenType("DOC_COMMENT");
+  IElementType ELIF = new PleaseTokenType("ELIF");
   IElementType ELSE = new PleaseTokenType("ELSE");
   IElementType EQ = new PleaseTokenType("=");
   IElementType EQUALS = new PleaseTokenType("EQUALS");
@@ -90,6 +92,9 @@ public interface PleaseTypes {
       }
       else if (type == FUNCTION_DEF_PARAM) {
         return new PleaseFunctionDefParamImpl(node);
+      }
+      else if (type == IF_STATEMENT) {
+        return new PleaseIfStatementImpl(node);
       }
       else if (type == LIST_LIT) {
         return new PleaseListLitImpl(node);

@@ -47,6 +47,7 @@ import org.intellij.plugin.please.psi.PleaseFunctionCall
 import org.intellij.plugin.please.psi.PleaseTypes
 import org.wso2.lsp4intellij.IntellijLanguageClient
 import org.wso2.lsp4intellij.client.languageserver.serverdefinition.RawCommandServerDefinition
+import org.wso2.lsp4intellij.requests.Timeouts
 import java.nio.file.Path
 import javax.swing.Icon
 import javax.swing.JComponent
@@ -136,11 +137,30 @@ object DocCommentMatcher : TokenMatcher {
     }
 }
 
+object BlockStartMatcher : TokenMatcher {
+    private val type = PleaseTypes.OPEN_BLOCK
+    override fun match(buffer: CharSequence, pos: Int): TokenMatchResult {
+        var endPos = pos+1
+        if(pos < buffer.length && buffer[pos] == ':') {
+            while (endPos < buffer.length) {
+                when(buffer[endPos]) {
+                    ' ' -> endPos++
+                    '\n' -> return TokenMatchResult.Match(buffer.substring(pos, endPos+1), type)
+                    else -> return TokenMatchResult.NoMatch
+                }
+            }
+        }
+        return TokenMatchResult.NoMatch
+    }
+
+}
+
 object EOL : IElementType("EOL", PleaseLanguage)
 
 val matchers = listOf(
     // Operators
     DocCommentMatcher,
+    BlockStartMatcher,
     StringMatcher("+", PleaseTypes.PLUS),
     StringMatcher("-", PleaseTypes.MINUS),
     StringMatcher("*", PleaseTypes.TIMES),
@@ -151,6 +171,9 @@ val matchers = listOf(
     StringMatcher("and", PleaseTypes.AND),
     StringMatcher("or", PleaseTypes.OR),
     StringMatcher("is", PleaseTypes.IS),
+    StringMatcher("if", PleaseTypes.IF),
+    StringMatcher("elif", PleaseTypes.ELIF),
+    StringMatcher("else", PleaseTypes.ELSE),
     StringMatcher("not", PleaseTypes.NOT),
     StringMatcher("in", PleaseTypes.IN),
     StringMatcher("==", PleaseTypes.EQUALS),
@@ -193,7 +216,6 @@ class PleaseLexer : LexerBase() {
     private var endOffset = 0
 
     private var pos = 0
-    private var state = 0
 
     private var currentToken: IElementType? = null
     private var currentTokenStart = 0
@@ -240,37 +262,34 @@ class PleaseLexer : LexerBase() {
         // Emit a block start/end if we changed indentation
         if(currentToken == EOL) {
             val indentation = calculateIndent(pos+1) // +1 to exclude the new line itself
-            // If we couldn't determine indentation (meaning the line was blank) don't generate a new block
+            // If we reach the end of the file, just return. We handle closing off open blocks later.
             if (indentation == -1) {
                 return
             }
 
-            currentTokenLength = indentation+1 // +1 to include the new line
-
-            // If we've indented further, add to the stack
-            if (indentation > indentations.last()) {
-                indentations.add(indentation)
-                currentToken = PleaseTypes.OPEN_BLOCK
-            }
-            // Otherwise try and match the last level of indentation
-            else if(indentations.size >= 2 && indentation == indentations[indentations.size-2]) {
+            if(indentations.size >= 2 && indentation == indentations[indentations.size-2]) {
                 indentations.removeAt(indentations.lastIndex)
                 currentToken = PleaseTypes.CLOSE_BLOCK
             }
+        } else if(currentToken == PleaseTypes.OPEN_BLOCK) {
+           indentations.add(calculateIndent(pos+1)) // +1 to exclude the new line itself
         }
     }
 
     private fun calculateIndent(from : Int) : Int {
         var i = from
+        var indentation = 0
         while (true) {
             if(i == buffer.length || i == endOffset) {
                 return -1 // Reached the end of the buffer, no match
             } else if(buffer[i] == ' ') {
                 i++ // found another space, increment indentation
+                indentation++
             } else if(buffer[i] == '\n' || buffer[i] == '\r') {
-                return -1 // empty lines don't count towards blocks, no match
+                indentation = 0
+                i++
             } else {
-                return i-from // return the difference between the start of the
+                return indentation
             }
         }
     }
@@ -281,7 +300,6 @@ class PleaseLexer : LexerBase() {
         currentTokenStart = startOffset
         this.endOffset = if (this.endOffset <= 0) buffer.length else endOffset
         this.buffer = buffer
-        this.state = initialState
         indentations = mutableListOf(0)
 
         locateToken()
@@ -289,7 +307,7 @@ class PleaseLexer : LexerBase() {
 
 
     override fun getState(): Int {
-        return state
+        return indentations.size
     }
 
     override fun getBufferEnd(): Int {
@@ -306,6 +324,11 @@ class PleaseLexer : LexerBase() {
         currentToken = null
         if (pos < endOffset) {
             locateToken() // locate the next token
+        } else if(indentations.size > 1) {
+            currentToken = PleaseTypes.CLOSE_BLOCK
+            currentTokenLength = 0
+            currentTokenStart = pos
+            indentations.removeAt(0)
         }
     }
 
@@ -569,5 +592,7 @@ class PleaseLSPPreloadActivity : PreloadingActivity() {
                 arrayOf("$home/.please/build_langserver")
             )
         )
+
+        IntellijLanguageClient.setTimeout(Timeouts.INIT, 60 * 1000)
     }
 }

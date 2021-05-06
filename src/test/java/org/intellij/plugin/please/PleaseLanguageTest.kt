@@ -41,13 +41,17 @@ class AppTest {
     @Test
     fun testIndent() {
         val lexer = PleaseLexer()
-        val program  = "foo\n    bar\nfoo    \n    bar"
+        val program  = "foo:\n    bar\nfoo:    \n    bar"
         lexer.start(program, 0, program.length)
         assertEquals("foo", lexer.tokenText)
 
+
         lexer.advance()
         assertEquals(PleaseTypes.OPEN_BLOCK, lexer.tokenType)
-        assertEquals("\n    ", lexer.tokenText)
+        assertEquals(":\n", lexer.tokenText)
+
+        lexer.advance()
+        assertEquals(TokenType.WHITE_SPACE, lexer.tokenType)
 
         lexer.advance()
         assertEquals(PleaseTypes.IDENT, lexer.tokenType)
@@ -57,6 +61,20 @@ class AppTest {
         assertEquals(PleaseTypes.CLOSE_BLOCK, lexer.tokenType)
         assertEquals("\n", lexer.tokenText)
 
+        lexer.advance()
+        assertEquals(PleaseTypes.IDENT, lexer.tokenType)
+        assertEquals("foo", lexer.tokenText)
+
+        lexer.advance()
+        assertEquals(PleaseTypes.OPEN_BLOCK, lexer.tokenType)
+        assertEquals(":\n", lexer.tokenText)
+
+        lexer.advance()
+        assertEquals(PleaseTypes.IDENT, lexer.tokenType)
+        assertEquals("bar", lexer.tokenText)
+
+        lexer.advance()
+        assertEquals(PleaseTypes.CLOSE_BLOCK, lexer.tokenType)
     }
 
     @Test

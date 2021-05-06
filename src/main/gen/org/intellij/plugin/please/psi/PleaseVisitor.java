@@ -39,6 +39,10 @@ public class PleaseVisitor extends PsiElementVisitor {
     visitPsiElement(o);
   }
 
+  public void visitIfStatement(@NotNull PleaseIfStatement o) {
+    visitPsiElement(o);
+  }
+
   public void visitListLit(@NotNull PleaseListLit o) {
     visitPsiElement(o);
   }
