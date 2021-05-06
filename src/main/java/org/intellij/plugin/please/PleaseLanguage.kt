@@ -105,12 +105,41 @@ class RegexMatcher(regex: String, private var type: IElementType) : TokenMatcher
     }
 }
 
-object EOL : IElementType("EOL", PleaseLanguage)
-object DOC_COMMENT : IElementType("DOC_COMMENT", PleaseLanguage)
+object DocCommentMatcher : TokenMatcher {
+    private const val quotes = "\"\"\""
+    private val type = PleaseTypes.DOC_COMMENT //TODO(jpoole): might want to be it's own type
+    override fun match(buffer: CharSequence, pos: Int): TokenMatchResult {
+        return when {
+            buffer.length < pos + quotes.length -> {
+                TokenMatchResult.NoMatch
+            }
+            buffer.subSequence(pos, pos+quotes.length).toString() == quotes -> {
+                readComment(buffer, pos)
+            }
+            else -> {
+                TokenMatchResult.NoMatch
+            }
+        }
+    }
 
-val matchers = listOf<TokenMatcher>(
+    private fun readComment(buffer: CharSequence, pos: Int) : TokenMatchResult {
+        var endPos = pos + quotes.length
+        while (endPos + quotes.length < buffer.length) {
+            val nextChars = buffer.subSequence(endPos, endPos+quotes.length)
+            if(nextChars.toString() == quotes) {
+                return TokenMatchResult.Match(buffer.subSequence(pos, endPos+quotes.length).toString(), type)
+            }
+            endPos++
+        }
+        return TokenMatchResult.NoMatch
+    }
+}
+
+object EOL : IElementType("EOL", PleaseLanguage)
+
+val matchers = listOf(
     // Operators
-    StringMatcher("\"\"\"", DOC_COMMENT),
+    DocCommentMatcher,
     StringMatcher("+", PleaseTypes.PLUS),
     StringMatcher("-", PleaseTypes.MINUS),
     StringMatcher("*", PleaseTypes.TIMES),
@@ -331,7 +360,7 @@ class PleaseFile(viewProvider: FileViewProvider) : PsiFileBase(viewProvider, Ple
 
 class PleaseParserDefinition : ParserDefinition {
     private val WHITE_SPACES = TokenSet.create(TokenType.WHITE_SPACE, EOL)
-    private val COMMENTS = TokenSet.create(PleaseTypes.COMMENT)
+    private val COMMENTS = TokenSet.create(PleaseTypes.COMMENT, PleaseTypes.DOC_COMMENT)
     private val STRINGS = TokenSet.create(PleaseTypes.STR_LIT)
 
     val FILE = IFileElementType(PleaseLanguage)
@@ -382,6 +411,7 @@ class PleaseSyntaxHighlighter : SyntaxHighlighterBase() {
         PleaseTypes.COLON to DefaultLanguageHighlighterColors.SEMICOLON,
         PleaseTypes.COMMA to DefaultLanguageHighlighterColors.COMMA,
         PleaseTypes.COMMENT to DefaultLanguageHighlighterColors.LINE_COMMENT,
+        PleaseTypes.DOC_COMMENT to DefaultLanguageHighlighterColors.DOC_COMMENT,
         PleaseTypes.CONTINUE to DefaultLanguageHighlighterColors.KEYWORD,
         PleaseTypes.DEF to DefaultLanguageHighlighterColors.KEYWORD,
         PleaseTypes.EQ to DefaultLanguageHighlighterColors.OPERATION_SIGN,

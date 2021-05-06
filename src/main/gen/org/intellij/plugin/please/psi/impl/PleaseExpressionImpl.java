@@ -21,6 +21,7 @@ public class PleaseExpressionImpl extends ASTWrapperPsiElement implements Please
     visitor.visitExpression(this);
   }
 
+  @Override
   public void accept(@NotNull PsiElementVisitor visitor) {
     if (visitor instanceof PleaseVisitor) accept((PleaseVisitor)visitor);
     else super.accept(visitor);

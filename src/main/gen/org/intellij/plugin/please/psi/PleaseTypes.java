@@ -30,6 +30,7 @@ public interface PleaseTypes {
   IElementType CONTINUE = new PleaseTokenType("continue");
   IElementType DEF = new PleaseTokenType("def");
   IElementType DIVIDE = new PleaseTokenType("DIVIDE");
+  IElementType DOC_COMMENT = new PleaseTokenType("DOC_COMMENT");
   IElementType ELSE = new PleaseTokenType("ELSE");
   IElementType EQ = new PleaseTokenType("=");
   IElementType EQUALS = new PleaseTokenType("EQUALS");

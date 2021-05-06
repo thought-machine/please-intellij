@@ -21,6 +21,7 @@ public class PleaseFunctionDefParamImpl extends ASTWrapperPsiElement implements 
     visitor.visitFunctionDefParam(this);
   }
 
+  @Override
   public void accept(@NotNull PsiElementVisitor visitor) {
     if (visitor instanceof PleaseVisitor) accept((PleaseVisitor)visitor);
     else super.accept(visitor);

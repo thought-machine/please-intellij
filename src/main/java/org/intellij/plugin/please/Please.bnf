@@ -34,6 +34,7 @@
         INT_LIT = "regexp:[0-9]+"
         STR_LIT = "regexp:('([^'\\]|\\.)*'|\"([^\"\\]|\\.)*\")"
         COMMENT = "regexp:(#)[^\r\n]*"
+        DOC_COMMENT = "regexp:(\"\"\")[^\r\n]*"
         IDENT = 'regexp:([a-zA-Z]+|_)([a-zA-Z]|[0-9]|_)*'
 
         space = "regexp:\w+"

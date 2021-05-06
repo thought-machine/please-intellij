@@ -21,6 +21,7 @@ public class PleaseDictLitImpl extends ASTWrapperPsiElement implements PleaseDic
     visitor.visitDictLit(this);
   }
 
+  @Override
   public void accept(@NotNull PsiElementVisitor visitor) {
     if (visitor instanceof PleaseVisitor) accept((PleaseVisitor)visitor);
     else super.accept(visitor);
