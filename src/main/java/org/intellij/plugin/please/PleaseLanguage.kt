@@ -513,7 +513,9 @@ class PleaseLSPPreloadActivity : PreloadingActivity() {
     override fun preload(indicator: ProgressIndicator) {
         // TODO(jpoole): use please to download this via //:_please:lsp
         val home = System.getProperty("user.home")
+
         IntellijLanguageClient.addServerDefinition(
+            PleaseFileType,
             RawCommandServerDefinition(
                 "plz",
                 arrayOf("$home/.please/build_langserver")
