@@ -1,12 +1,15 @@
-package org.intellij.plugin.please
+package org.intellij.plugin.please.parser
 
 import com.intellij.psi.TokenType
 import org.intellij.plugin.please.psi.PleaseTypes
 import org.junit.Assert.*
 import org.junit.Test
+import please.parser.PleaseLexer
+import please.parser.RegexMatcher
+import please.parser.TokenMatchResult
 
 
-class AppTest {
+class ParserTest {
     @Test
     fun testBasicMatch() {
         val res = RegexMatcher("def", PleaseTypes.DEF).match("foo = def foo():\npass", 6)

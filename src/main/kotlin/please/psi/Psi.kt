@@ -1,7 +1,7 @@
-package org.intellij.plugin.please.psi
+package please.psi
 
 import com.intellij.psi.tree.IElementType
-import org.intellij.plugin.please.PleaseLanguage
+import please.PleaseLanguage
 
 class PleaseTokenType(debugName: String) : IElementType(debugName, PleaseLanguage)
 

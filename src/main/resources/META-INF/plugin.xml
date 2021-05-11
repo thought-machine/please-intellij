@@ -10,18 +10,18 @@
     <depends>com.intellij.modules.platform</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <fileType name="Please" implementationClass="org.intellij.plugin.please.PleaseFileType"
+        <fileType name="Please" implementationClass="please.PleaseFileType"
                   fieldName="INSTANCE" language="Please" extensions="plz;build_defs;build_def" fileNames="BUILD"/>
         <lang.parserDefinition language="Please"
-                               implementationClass="org.intellij.plugin.please.PleaseParserDefinition"/>
+                               implementationClass="please.parser.PleaseParserDefinition"/>
         <lang.syntaxHighlighterFactory language="Please"
-                                       implementationClass="org.intellij.plugin.please.PleaseSyntaxHighlighterFactory"/>
+                                       implementationClass="please.parser.PleaseSyntaxHighlighterFactory"/>
         <runLineMarkerContributor language="Please"
-                                        implementationClass="org.intellij.plugin.please.PleaseLineMarkerProvider"/>
-        <configurationType implementation="org.intellij.plugin.please.PleaseRunConfigurationType"/>
+                                        implementationClass="please.PleaseLineMarkerProvider"/>
+        <configurationType implementation="please.PleaseRunConfigurationType"/>
 
-        <preloadingActivity implementation="org.intellij.plugin.please.PleaseLSPPreloadActivity"
-                            id="org.intellij.plugin.please.PleaseLSPPreloadActivity" />
+        <preloadingActivity implementation="please.PleaseLSPPreloadActivity"
+                            id="please.PleaseLSPPreloadActivity" />
         <completion.contributor implementationClass="org.wso2.lsp4intellij.contributors.LSPCompletionContributor"
                                 id="LSPCompletionContributor" language="Please"/>
     </extensions>

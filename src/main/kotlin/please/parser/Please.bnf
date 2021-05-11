@@ -9,8 +9,8 @@
     psiImplPackage="org.intellij.plugin.please.psi.impl"
 
     elementTypeHolderClass="org.intellij.plugin.please.psi.PleaseTypes"
-    elementTypeClass="org.intellij.plugin.please.psi.PleaseElementType"
-    tokenTypeClass="org.intellij.plugin.please.psi.PleaseTokenType"
+    elementTypeClass="please.psi.PleaseElementType"
+    tokenTypeClass="please.psi.PleaseTokenType"
 
     tokens = [
         EQ = "="

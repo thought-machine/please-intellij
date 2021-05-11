@@ -4,6 +4,8 @@ package org.intellij.plugin.please.psi;
 import com.intellij.psi.tree.IElementType;
 import com.intellij.psi.PsiElement;
 import com.intellij.lang.ASTNode;
+import please.psi.PleaseElementType;
+import please.psi.PleaseTokenType;
 import org.intellij.plugin.please.psi.impl.*;
 
 public interface PleaseTypes {
