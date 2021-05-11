@@ -18,8 +18,8 @@ import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
 import com.intellij.psi.impl.source.tree.LeafPsiElement
-import net.thoughtmachine.please.plugin.psi.PleaseFunctionCall
-import net.thoughtmachine.please.plugin.psi.PleaseTypes
+import net.thoughtmachine.please.plugin.parser.psi.PleaseFunctionCall
+import net.thoughtmachine.please.plugin.parser.psi.PleaseTypes
 import javax.swing.Icon
 import javax.swing.JComponent
 import javax.swing.JTextField

@@ -1,7 +1,7 @@
 package net.thoughtmachine.please.plugin.parser
 
 import com.intellij.psi.TokenType
-import net.thoughtmachine.please.plugin.psi.PleaseTypes
+import net.thoughtmachine.please.plugin.parser.psi.PleaseTypes
 import org.junit.Assert.*
 import org.junit.Test
 

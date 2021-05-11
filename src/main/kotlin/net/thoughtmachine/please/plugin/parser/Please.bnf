@@ -5,12 +5,12 @@
 
     psiClassPrefix="Please"
     psiImplClassSuffix="Impl"
-    psiPackage="net.thoughtmachine.please.plugin.psi"
-    psiImplPackage="net.thoughtmachine.please.plugin.psi.impl"
+    psiPackage="net.thoughtmachine.please.plugin.parser.psi"
+    psiImplPackage="net.thoughtmachine.please.plugin.parser.psi.impl"
 
-    elementTypeHolderClass="net.thoughtmachine.please.plugin.psi.PleaseTypes"
-    elementTypeClass="net.thoughtmachine.please.plugin.psi.PleaseElementType"
-    tokenTypeClass="net.thoughtmachine.please.plugin.psi.PleaseTokenType"
+    elementTypeHolderClass="net.thoughtmachine.please.plugin.parser.psi.PleaseTypes"
+    elementTypeClass="net.thoughtmachine.please.plugin.parser.psi.PleaseElementType"
+    tokenTypeClass="net.thoughtmachine.please.plugin.parser.psi.PleaseTokenType"
 
     // Mostly these tokens are just here to provide a basic lexer to enable live preview in intellij.
     //

@@ -7,7 +7,7 @@ import com.intellij.openapi.editor.colors.TextAttributesKey
 import com.intellij.openapi.fileTypes.SyntaxHighlighterBase
 import com.intellij.psi.TokenType
 import com.intellij.psi.tree.IElementType
-import net.thoughtmachine.please.plugin.psi.PleaseTypes
+import net.thoughtmachine.please.plugin.parser.psi.PleaseTypes
 
 /**
  * Provides highlighting for Please build files

@@ -4,7 +4,7 @@ import com.intellij.lexer.LexerBase
 import com.intellij.psi.TokenType
 import com.intellij.psi.tree.IElementType
 import net.thoughtmachine.please.plugin.PleaseLanguage
-import net.thoughtmachine.please.plugin.psi.PleaseTypes
+import net.thoughtmachine.please.plugin.parser.psi.PleaseTypes
 
 // The parser doesn't need to worry about new lines. This is just used by the lexer and is later translated into
 // open/close block, or whitespace tokens by the lexer.

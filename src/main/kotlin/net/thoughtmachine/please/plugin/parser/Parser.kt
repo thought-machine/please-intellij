@@ -13,7 +13,7 @@ import com.intellij.psi.tree.IFileElementType
 import com.intellij.psi.tree.TokenSet
 import net.thoughtmachine.please.plugin.PleaseFile
 import net.thoughtmachine.please.plugin.PleaseLanguage
-import net.thoughtmachine.please.plugin.psi.PleaseTypes
+import net.thoughtmachine.please.plugin.parser.psi.PleaseTypes
 
 private val WHITE_SPACES = TokenSet.create(TokenType.WHITE_SPACE, EOL)
 private val COMMENTS = TokenSet.create(PleaseTypes.COMMENT, PleaseTypes.DOC_COMMENT)
