@@ -21,7 +21,9 @@ private val COMMENTS = TokenSet.create(PleaseTypes.COMMENT, PleaseTypes.DOC_COMM
 private val STRINGS = TokenSet.create(PleaseTypes.STR_LIT)
 private val FILE = IFileElementType(PleaseLanguage)
 
-
+/**
+ * Some boilerplate to register the Please BUILD file parser with intellij
+ */
 class PleaseParserDefinition : ParserDefinition {
     override fun createLexer(project: Project): Lexer {
         return PleaseLexer()

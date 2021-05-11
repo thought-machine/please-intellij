@@ -12,6 +12,8 @@ import java.nio.file.Path
 val PLEASE_ICON = IconLoader.getIcon("/icons/please.png", PleaseFileType.javaClass)
 object PleaseLanguage : Language("Please")
 
+// TODO(jpoole): We want a distinction between build_defs and BUILD files as we don't want to provide gutter icons on
+//  build_def files in the same way.
 object PleaseFileType : LanguageFileType(PleaseLanguage) {
     override fun getIcon() = PLEASE_ICON
 
@@ -24,6 +26,7 @@ object PleaseFileType : LanguageFileType(PleaseLanguage) {
 
 class PleaseFile(viewProvider: FileViewProvider) : PsiFileBase(viewProvider, PleaseLanguage) {
     private var pkg = ""
+
     override fun getFileType(): FileType {
         return PleaseFileType
     }
@@ -32,6 +35,9 @@ class PleaseFile(viewProvider: FileViewProvider) : PsiFileBase(viewProvider, Ple
         return "Please File"
     }
 
+    /**
+     * Gets the Please package name for the File by walking up the file tree to find the .plzconfig.
+     */
     fun getPleasePackage() : String {
         if (pkg != "") {
             return pkg

@@ -12,6 +12,13 @@
     elementTypeClass="please.psi.PleaseElementType"
     tokenTypeClass="please.psi.PleaseTokenType"
 
+    // Mostly these tokens are just here to provide a basic lexer to enable live preview in intellij.
+    //
+    // These are actually semi-important to get this thing to generate token types for stuff that doesn't actually
+    // appear in the grammar e.g. comments. The tokens are omitted from the token stream by intellij which is nice but
+    // we still want to emmit them from the lexer so we can syntax highlight them correctly.
+    //
+    // TODO(jpoole): remove these once we're done writing the grammar and define the token types somewhere else
     tokens = [
         EQ = "="
         PLUS = "+"

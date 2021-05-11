@@ -4,16 +4,15 @@ import com.intellij.lexer.Lexer
 import com.intellij.openapi.editor.DefaultLanguageHighlighterColors
 import com.intellij.openapi.editor.HighlighterColors
 import com.intellij.openapi.editor.colors.TextAttributesKey
-import com.intellij.openapi.fileTypes.SyntaxHighlighter
 import com.intellij.openapi.fileTypes.SyntaxHighlighterBase
-import com.intellij.openapi.fileTypes.SyntaxHighlighterFactory
-import com.intellij.openapi.project.Project
-import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.TokenType
 import com.intellij.psi.tree.IElementType
 import org.intellij.plugin.please.psi.PleaseTypes
 
-class PleaseSyntaxHighlighter : SyntaxHighlighterBase() {
+/**
+ * Provides highlighting for Please build files
+ */
+object PleaseSyntaxHighlighter : SyntaxHighlighterBase() {
     private val colors = mapOf(
         TokenType.BAD_CHARACTER to HighlighterColors.BAD_CHARACTER,
         PleaseTypes.COLON to DefaultLanguageHighlighterColors.SEMICOLON,
@@ -48,16 +47,5 @@ class PleaseSyntaxHighlighter : SyntaxHighlighterBase() {
             return arrayOf(key)
         }
         return arrayOf()
-    }
-
-
-}
-
-class PleaseSyntaxHighlighterFactory : SyntaxHighlighterFactory() {
-    override fun getSyntaxHighlighter(
-        project: Project?,
-        virtualFile: VirtualFile?
-    ): SyntaxHighlighter {
-        return PleaseSyntaxHighlighter()
     }
 }

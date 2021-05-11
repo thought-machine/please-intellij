@@ -3,13 +3,15 @@ package please.parser
 import com.intellij.lexer.LexerBase
 import com.intellij.psi.TokenType
 import com.intellij.psi.tree.IElementType
-import org.intellij.plugin.please.*
 import org.intellij.plugin.please.psi.PleaseTypes
 import please.PleaseLanguage
 
+// The parser doesn't need to worry about new lines. This is just used by the lexer and is later translated into
+// open/close block, or whitespace tokens by the lexer.
 object EOL : IElementType("EOL", PleaseLanguage)
 
-private val MATCHERS = listOf(
+// A set of matchers in no particular order.
+private val MATCHERS = setOf(
     // Operators
     DocCommentMatcher,
     BlockStartMatcher,
@@ -61,9 +63,19 @@ private val MATCHERS = listOf(
     RegexMatcher("('([^'\\\\]|\\\\.)*'|\\\"([^\\\"\\\\]|\\\\.)*\\\")", PleaseTypes.STR_LIT)
 )
 
-
+/**
+ * This is the lexer for the ASP language. Because we care about indentation this is a little more complex than your
+ * typical lexer. It keeps a stack of indentations, and emits open and close block tokens when we move between
+ * indentation levels.
+ *
+ * The size of this indentation stack makes up the state of the lexer although this is mostly just so that intellij
+ * knows that the lexer hasn't gotten stuck when we're emitting close blocks when we reach the end of the file.
+ *
+ * The lexer uses the longest match to resolve ambiguity when parsing tokens.
+ */
 class PleaseLexer : LexerBase() {
     private lateinit var buffer: CharSequence
+
     // The offset (from the beginning of the buffer) to stop indexing at
     private var endOffset = 0
 
@@ -72,10 +84,19 @@ class PleaseLexer : LexerBase() {
     private var currentToken: IElementType? = null
     private var currentTokenStart = 0
     private var currentTokenLength : Int = 0
+
+    /**
+     * The stack of indentations. We start off at indentation level 0. We push onto this stack when we see a block start
+     * i.e. `:\n`.
+     *
+     * For more information on what we push onto this stack, see calculateIdent() below.
+     */
     private var indentations = mutableListOf(0)
 
-    // longestMatch will try and match any of the token types returning the longest match. If there's a tie, the first
-    // match is returned. This means keywords match before identifiers, as keyword appear earlier in the list.
+    /**
+     * longestMatch will try and match any of the token types returning the longest match. If there's a tie, the first
+     * match is returned. This means keywords match before identifiers, as keyword appear earlier in the list.
+     */
     private fun longestMatch() : TokenMatchResult {
         var match : TokenMatchResult = TokenMatchResult.NoMatch
         for (matcher in MATCHERS) {
@@ -87,10 +108,14 @@ class PleaseLexer : LexerBase() {
         return match
     }
 
-    // locateToken finds a token at the current position
+    /**
+     * locateToken finds a token at the current position, and sets currentToken, currentTokenStart and
+     * currentTokenLength accordingly. If currentToken is not null, then this will simply return as the token is already
+     * located.
+     */
     private fun locateToken() {
         if(currentToken != null) {
-            return
+            return // Don't relocate the token if we've already found one.
         }
         currentTokenStart = pos
 
@@ -124,10 +149,20 @@ class PleaseLexer : LexerBase() {
                 currentToken = PleaseTypes.CLOSE_BLOCK
             }
         } else if(currentToken == PleaseTypes.OPEN_BLOCK) {
+            // Otherwise if we encountered an open block token, we need to push the new indentation to the stack.
             indentations.add(calculateIndent(pos+1)) // +1 to exclude the new line itself
         }
     }
 
+    /**
+     * calculateIdent will calculate the indentation level at a given position. This is called after we see newlines
+     * to figure out if we should emit a close block token, as well as after `:\n` to emit the open block token as well
+     * as update the ident stack.
+     *
+     * The indentation is calculated by counting the number of spaces until the first non-whitespace character on the
+     * line. If there's no non-whitespace characters on the line, then we try again on the next line until we find a
+     * non-blank line.
+     */
     private fun calculateIndent(from : Int) : Int {
         var i = from
         var indentation = 0
@@ -159,6 +194,8 @@ class PleaseLexer : LexerBase() {
 
 
     override fun getState(): Int {
+        // We emit close blocks for all open blocks when we read EOF. This makes sure that intellij is aware something
+        // is changing and the lexer hasn't just locked up.
         return indentations.size
     }
 
@@ -170,6 +207,13 @@ class PleaseLexer : LexerBase() {
         return buffer
     }
 
+    /**
+     * advance will find the next token in the stream, and set currentToken, currentTokenLength, currentTokenStart and
+     * pos accordingly.
+     *
+     * This function will also emit close blocks when we reach the end of the buffer for each block we currently have
+     * open.
+     */
     override fun advance() {
         locateToken() // make sure we've set the current token; it's probably already located, but I don't trust this stateful API
         pos += currentTokenLength
@@ -201,6 +245,9 @@ class PleaseLexer : LexerBase() {
     }
 }
 
+/**
+ * TokenMatchResult contains the possible outcomes of trying to match a token.
+ */
 sealed class TokenMatchResult {
     object NoMatch : TokenMatchResult() {
         override fun len() = -1
@@ -213,10 +260,16 @@ sealed class TokenMatchResult {
     abstract fun len() : Int
 }
 
+/**
+ * A TokenMatcher matches a token and produces a TokenResult (which can be TokenResult.NoMatch if there's no match)
+ */
 interface TokenMatcher {
     fun match(buffer: CharSequence, pos: Int): TokenMatchResult
 }
 
+/**
+ * Matches strings literally
+ */
 class StringMatcher(private var string: String, private var type: IElementType) : TokenMatcher {
     override fun match(buffer: CharSequence, pos: Int) = when {
         buffer.length < pos + string.length -> {
@@ -231,6 +284,9 @@ class StringMatcher(private var string: String, private var type: IElementType) 
     }
 }
 
+/**
+ * Matches based on a regex pattern
+ */
 class RegexMatcher(regex: String, private var type: IElementType) : TokenMatcher {
     private var r = Regex("^$regex")
     override fun match(buffer: CharSequence, pos: Int): TokenMatchResult {
@@ -242,6 +298,9 @@ class RegexMatcher(regex: String, private var type: IElementType) : TokenMatcher
     }
 }
 
+/**
+ * Matches asp "doc comments" i.e. strings that start with `"""`
+ */
 object DocCommentMatcher : TokenMatcher {
     private const val quotes = "\"\"\""
     private val type = PleaseTypes.DOC_COMMENT //TODO(jpoole): might want to be it's own type
@@ -272,6 +331,9 @@ object DocCommentMatcher : TokenMatcher {
     }
 }
 
+/**
+ * Matches block starts i.e. a comma followed by a newline
+ */
 object BlockStartMatcher : TokenMatcher {
     private val type = PleaseTypes.OPEN_BLOCK
     override fun match(buffer: CharSequence, pos: Int): TokenMatchResult {
@@ -287,5 +349,4 @@ object BlockStartMatcher : TokenMatcher {
         }
         return TokenMatchResult.NoMatch
     }
-
 }

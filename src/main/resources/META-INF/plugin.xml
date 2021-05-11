@@ -14,8 +14,8 @@
                   fieldName="INSTANCE" language="Please" extensions="plz;build_defs;build_def" fileNames="BUILD"/>
         <lang.parserDefinition language="Please"
                                implementationClass="please.parser.PleaseParserDefinition"/>
-        <lang.syntaxHighlighterFactory language="Please"
-                                       implementationClass="please.parser.PleaseSyntaxHighlighterFactory"/>
+        <lang.syntaxHighlighter language="Please"
+                                       implementationClass="please.parser.PleaseSyntaxHighlighter"/>
         <runLineMarkerContributor language="Please"
                                         implementationClass="please.PleaseLineMarkerProvider"/>
         <configurationType implementation="please.PleaseRunConfigurationType"/>

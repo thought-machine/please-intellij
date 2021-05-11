@@ -24,6 +24,9 @@ import javax.swing.Icon
 import javax.swing.JComponent
 import javax.swing.JTextField
 
+/**
+ * Provides gutter icons against build rules in BUILD files
+ */
 class PleaseLineMarkerProvider : RunLineMarkerContributor() {
 
     // getInfo needs to apply the run info to the LeafPsiElement as that's what intellij demands. It looks for the
@@ -42,8 +45,9 @@ class PleaseLineMarkerProvider : RunLineMarkerContributor() {
             return null
         }
 
-        val name = parent.functionCallParamList.find { it.ident?.text == "name" }?.expression?.value?.strLit?.text
         val file = element.containingFile
+
+        val name = parent.functionCallParamList.find { it.ident?.text == "name" }?.expression?.value?.strLit?.text
         if (name != null && file is PleaseFile) {
             val target = "//${file.getPleasePackage()}:${name.trim { it == '\"' || it == '\''} }"
             return Info(
