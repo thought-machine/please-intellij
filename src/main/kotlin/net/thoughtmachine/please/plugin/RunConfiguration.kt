@@ -5,9 +5,7 @@ import com.goide.execution.GoRunUtil
 import com.intellij.execution.*
 import com.intellij.execution.configurations.*
 import com.intellij.execution.executors.DefaultDebugExecutor
-import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.execution.filters.TextConsoleBuilderFactory
-import com.intellij.execution.impl.ConsoleViewImpl
 import com.intellij.execution.impl.RunManagerImpl
 import com.intellij.execution.impl.RunnerAndConfigurationSettingsImpl
 import com.intellij.execution.lineMarker.RunLineMarkerContributor
@@ -17,18 +15,14 @@ import com.intellij.execution.runners.DebuggableRunProfileState
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.execution.runners.ProgramRunner
 import com.intellij.execution.ui.ConsoleView
-import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
-import com.intellij.profiler.dtrace.a
 import com.intellij.psi.PsiElement
 import com.intellij.psi.impl.source.tree.LeafPsiElement
 import com.intellij.xdebugger.XDebugProcess
 import com.intellij.xdebugger.XDebugSession
-import net.thoughtmachine.please.plugin.parser.psi.PleaseFunctionCall
-import net.thoughtmachine.please.plugin.parser.psi.PleaseTypes
 import org.jetbrains.concurrency.Promise
 import org.jetbrains.debugger.DebuggableRunConfiguration
 import java.net.InetSocketAddress
@@ -50,27 +44,24 @@ class PleaseLineMarkerProvider : RunLineMarkerContributor() {
             return null
         }
 
-        // We're looking for the IDENT of the function call here, not any of the other tokens
-        if(element.elementType != PleaseTypes.IDENT) {
-            return null
-        }
+//
+//        val parent = element.parent
+//        if (parent !is PleaseFunctionCall) {
+//            return null
+//        }
+//
+//        val file = element.containingFile
+//
+//        val name = parent.functionCallParamList.find { it.ident?.text == "name" }?.expression?.value?.strLit?.text
+//        if (name != null && file is PleaseFile) {
+//            val target = "//${file.getPleasePackage()}:${name.trim { it == '\"' || it == '\''} }"
+//            return Info(
+//                AllIcons.Actions.Execute, com.intellij.util.Function { "run $target" },
+//                PleaseAction(element.project, DefaultRunExecutor.getRunExecutorInstance(), target, AllIcons.Actions.Execute),
+//                PleaseAction(element.project, DefaultDebugExecutor.getDebugExecutorInstance(), target, AllIcons.Actions.StartDebugger)
+//            )
+//        }
 
-        val parent = element.parent
-        if (parent !is PleaseFunctionCall) {
-            return null
-        }
-
-        val file = element.containingFile
-
-        val name = parent.functionCallParamList.find { it.ident?.text == "name" }?.expression?.value?.strLit?.text
-        if (name != null && file is PleaseFile) {
-            val target = "//${file.getPleasePackage()}:${name.trim { it == '\"' || it == '\''} }"
-            return Info(
-                AllIcons.Actions.Execute, com.intellij.util.Function { "run $target" },
-                PleaseAction(element.project, DefaultRunExecutor.getRunExecutorInstance(), target, AllIcons.Actions.Execute),
-                PleaseAction(element.project, DefaultDebugExecutor.getDebugExecutorInstance(), target, AllIcons.Actions.StartDebugger)
-            )
-        }
         return null
     }
 }
@@ -145,7 +136,7 @@ class PleaseRunConfiguration(project: Project, factory: ConfigurationFactory, va
         executionResult: ExecutionResult?,
         environment: ExecutionEnvironment
     ): XDebugProcess {
-        return GoRunUtil.createDlvDebugProcess(session, executionResult, socketAddress, true, DlvDisconnectOption.KILL)
+        return GoRunUtil.createDlvDebugProcess(session, executionResult, socketAddress, true, DlvDisconnectOption.LEAVE_RUNNING)
     }
 }
 
@@ -157,7 +148,7 @@ private fun (Project).createConsole(processHandler: ProcessHandler): ConsoleView
 
 class PleaseRunState(private var target: String, private var project: Project) : RunProfileState {
     private fun startProcess(): ProcessHandler {
-        val cmd = PtyCommandLine(mutableListOf("plz", "run",  "--config=dbg", "-p", "-v", "notice", target))
+        val cmd = PtyCommandLine(mutableListOf("plz", "run", "-p", "-v", "notice", target))
         cmd.setWorkDirectory(project.basePath!!)
         return ProcessHandlerFactoryImpl.getInstance().createColoredProcessHandler(cmd)
     }

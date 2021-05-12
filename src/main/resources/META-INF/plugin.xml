@@ -8,14 +8,16 @@
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
+    <depends>Pythonid</depends>
+    <depends>org.jetbrains.plugins.go</depends>
 
     <extensions defaultExtensionNs="com.intellij">
         <fileType name="Please" implementationClass="net.thoughtmachine.please.plugin.PleaseFileType"
                   fieldName="INSTANCE" language="Please" extensions="plz;build_defs;build_def" fileNames="BUILD"/>
         <lang.parserDefinition language="Please"
                                implementationClass="net.thoughtmachine.please.plugin.parser.PleaseParserDefinition"/>
-        <lang.syntaxHighlighter language="Please"
-                                       implementationClass="net.thoughtmachine.please.plugin.parser.PleaseSyntaxHighlighter"/>
+<!--        <lang.syntaxHighlighterFactory language="Please"-->
+<!--                                       implementationClass="com.jetbrains.python.highlighting.PySyntaxHighlighterFactory"/>-->
         <runLineMarkerContributor language="Please"
                                         implementationClass="net.thoughtmachine.please.plugin.PleaseLineMarkerProvider"/>
         <configurationType implementation="net.thoughtmachine.please.plugin.PleaseRunConfigurationType"/>
@@ -36,5 +38,4 @@
         <!-- Add your actions here -->
     </actions>
 
-    <depends>org.jetbrains.plugins.go</depends>
 </idea-plugin>

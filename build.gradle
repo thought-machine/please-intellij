@@ -23,7 +23,7 @@ dependencies {
 //   depend on community edition
 intellij {
     version 'IU-2021.1.1'
-    plugins 'org.jetbrains.plugins.go:211.7142.36'
+    setPlugins("Pythonid:211.7142.45", 'org.jetbrains.plugins.go:211.7142.36')
 }
 
 compileKotlin {

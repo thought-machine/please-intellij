@@ -6,7 +6,9 @@ import com.intellij.openapi.fileTypes.FileType
 import com.intellij.openapi.fileTypes.LanguageFileType
 import com.intellij.openapi.util.IconLoader
 import com.intellij.psi.FileViewProvider
+import com.jetbrains.python.psi.impl.PyFileImpl
 import java.nio.file.Path
+import javax.swing.Icon
 
 
 val PLEASE_ICON = IconLoader.getIcon("/icons/please.png", PleaseFileType.javaClass)
@@ -21,7 +23,7 @@ object PleaseFileType : LanguageFileType(PleaseLanguage) {
 
     override fun getDefaultExtension() = ".plz"
 
-    override fun getDescription() = ""
+    override fun getDescription() = "Please BUILD file"
 }
 
 class PleaseFile(viewProvider: FileViewProvider) : PsiFileBase(viewProvider, PleaseLanguage) {
@@ -33,6 +35,10 @@ class PleaseFile(viewProvider: FileViewProvider) : PsiFileBase(viewProvider, Ple
 
     override fun toString(): String {
         return "Please File"
+    }
+
+    override fun getIcon(flags: Int): Icon {
+        return PLEASE_ICON
     }
 
     /**
