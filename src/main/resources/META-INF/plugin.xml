@@ -35,4 +35,6 @@
     <actions>
         <!-- Add your actions here -->
     </actions>
+
+    <depends>org.jetbrains.plugins.go</depends>
 </idea-plugin>

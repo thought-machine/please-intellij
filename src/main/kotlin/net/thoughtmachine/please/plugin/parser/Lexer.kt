@@ -10,11 +10,9 @@ import net.thoughtmachine.please.plugin.parser.psi.PleaseTypes
 // open/close block, or whitespace tokens by the lexer.
 object EOL : IElementType("EOL", PleaseLanguage)
 
-// A set of matchers in no particular order.
+// A set of matchers in order of precedence then performance cost
 private val MATCHERS = setOf(
-    // Operators
-    DocCommentMatcher,
-    BlockStartMatcher,
+    // Syntax
     StringMatcher("+", PleaseTypes.PLUS),
     StringMatcher("-", PleaseTypes.MINUS),
     StringMatcher("*", PleaseTypes.TIMES),
@@ -22,45 +20,49 @@ private val MATCHERS = setOf(
     StringMatcher("%", PleaseTypes.PERCENT),
     StringMatcher("<", PleaseTypes.LEFT_CHEV),
     StringMatcher(">", PleaseTypes.RIGHT_CHEV),
-    StringMatcher("and", PleaseTypes.AND),
-    StringMatcher("or", PleaseTypes.OR),
-    StringMatcher("is", PleaseTypes.IS),
-    StringMatcher("if", PleaseTypes.IF),
-    StringMatcher("elif", PleaseTypes.ELIF),
-    StringMatcher("else", PleaseTypes.ELSE),
-    StringMatcher("not", PleaseTypes.NOT),
-    StringMatcher("in", PleaseTypes.IN),
     StringMatcher("==", PleaseTypes.EQUALS),
     StringMatcher("!=", PleaseTypes.NOT_EQUALS),
     StringMatcher(">=", PleaseTypes.GTE),
     StringMatcher("<=", PleaseTypes.LTE),
+    StringMatcher("=", PleaseTypes.EQ),
+    StringMatcher(",", PleaseTypes.COMMA),
+    StringMatcher("[", PleaseTypes.LBRACK),
+    StringMatcher("]", PleaseTypes.RBRACK),
+    StringMatcher("{", PleaseTypes.LBRACE),
+    StringMatcher("}", PleaseTypes.RBRACE),
+    StringMatcher("(", PleaseTypes.LPAREN),
+    StringMatcher(")", PleaseTypes.RPAREN),
+    StringMatcher("|", PleaseTypes.PIPE),
 
     // Keywords
-    StringMatcher("=", PleaseTypes.EQ),
-    StringMatcher(":", PleaseTypes.COLON),
-    StringMatcher(",", PleaseTypes.COMMA),
-    StringMatcher("pass", PleaseTypes.PASS),
-    StringMatcher("continue", PleaseTypes.CONTINUE),
-    StringMatcher("def", PleaseTypes.DEF),
-    StringMatcher("False", PleaseTypes.FALSE_LIT),
-    StringMatcher("True", PleaseTypes.TRUE_LIT),
+    StringMatcher("pass", PleaseTypes.PASS, true),
+    StringMatcher("continue", PleaseTypes.CONTINUE, true),
+    StringMatcher("def", PleaseTypes.DEF, true),
+    StringMatcher("False", PleaseTypes.FALSE_LIT, true),
+    StringMatcher("True", PleaseTypes.TRUE_LIT, true),
+    StringMatcher("and", PleaseTypes.AND, true),
+    StringMatcher("or", PleaseTypes.OR, true),
+    StringMatcher("is", PleaseTypes.IS, true),
+    StringMatcher("if", PleaseTypes.IF, true),
+    StringMatcher("elif", PleaseTypes.ELIF, true),
+    StringMatcher("else", PleaseTypes.ELSE, true),
+    StringMatcher("not", PleaseTypes.NOT, true),
+    StringMatcher("in", PleaseTypes.IN, true),
 
-    // Syntax
-    RegexMatcher("\\[", PleaseTypes.LBRACK),
-    RegexMatcher("\\]", PleaseTypes.RBRACK),
-    RegexMatcher("\\{", PleaseTypes.LBRACE),
-    RegexMatcher("\\}", PleaseTypes.RBRACE),
-    RegexMatcher("\\(", PleaseTypes.LPAREN),
-    RegexMatcher("\\)", PleaseTypes.RPAREN),
-    RegexMatcher("\\|", PleaseTypes.PIPE),
+    // Must appear before PleaseTypes.COLON
+    BlockStartMatcher,
+    StringMatcher(":", PleaseTypes.COLON),
+
+    // String lits
+    StringLitMatcher(startQuote = "\"\"\"", multiLine = true, type = PleaseTypes.DOC_COMMENT),
+    StringLitMatcher(startQuote = "\"", type = PleaseTypes.STR_LIT),
 
     // Regex matchers
-    RegexMatcher("(#)[^\\r\\n]*", PleaseTypes.COMMENT),
     RegexMatcher("(\n|\r|\r\n)", EOL),
     RegexMatcher(" +", TokenType.WHITE_SPACE),
-    RegexMatcher("([a-zA-Z]+|_)([a-zA-Z]|[0-9]|_)*", PleaseTypes.IDENT),
+    RegexMatcher("(#)[^\\r\\n]*", PleaseTypes.COMMENT),
     RegexMatcher("[0-9]+", PleaseTypes.INT_LIT),
-    RegexMatcher("('([^'\\\\]|\\\\.)*'|\\\"([^\\\"\\\\]|\\\\.)*\\\")", PleaseTypes.STR_LIT)
+    RegexMatcher("([a-zA-Z]+|_)([a-zA-Z]|[0-9]|_)*", PleaseTypes.IDENT)
 )
 
 /**
@@ -93,19 +95,14 @@ class PleaseLexer : LexerBase() {
      */
     private var indentations = mutableListOf(0)
 
-    /**
-     * longestMatch will try and match any of the token types returning the longest match. If there's a tie, the first
-     * match is returned. This means keywords match before identifiers, as keyword appear earlier in the list.
-     */
-    private fun longestMatch() : TokenMatchResult {
-        var match : TokenMatchResult = TokenMatchResult.NoMatch
+    private fun match() : TokenMatchResult {
         for (matcher in MATCHERS) {
             val m = matcher.match(buffer, pos)
-            if (m.len() > match.len()) {
-                match = m
+            if (m is TokenMatchResult.Match) {
+                return m
             }
         }
-        return match
+        return TokenMatchResult.NoMatch
     }
 
     /**
@@ -119,7 +116,7 @@ class PleaseLexer : LexerBase() {
         }
         currentTokenStart = pos
 
-        val m = longestMatch()
+        val m = match()
         if (m is TokenMatchResult.Match) {
             currentToken = m.type
             currentTokenLength = m.len()
@@ -270,17 +267,22 @@ interface TokenMatcher {
 /**
  * Matches strings literally
  */
-class StringMatcher(private var string: String, private var type: IElementType) : TokenMatcher {
-    override fun match(buffer: CharSequence, pos: Int) = when {
-        buffer.length < pos + string.length -> {
-            TokenMatchResult.NoMatch
+class StringMatcher(private var string: String, private var type: IElementType, private var isKeyword: Boolean = false) : TokenMatcher {
+    override fun match(buffer: CharSequence, pos: Int) : TokenMatchResult {
+        when {
+            buffer.length < pos + string.length -> {
+                return TokenMatchResult.NoMatch
+            }
+            buffer.subSequence(pos, pos+string.length).toString() == string -> {
+                val next = buffer.getOrNull(pos+string.length)
+                // Avoid matching if there's a non-whitespace character after a keywrod
+                if (!isKeyword || next == null || next == ' ' || next == '\n'){
+                    return TokenMatchResult.Match(string, type)
+                }
+            }
+
         }
-        buffer.subSequence(pos, pos+string.length).toString() == string -> {
-            TokenMatchResult.Match(string, type)
-        }
-        else -> {
-            TokenMatchResult.NoMatch
-        }
+        return TokenMatchResult.NoMatch
     }
 }
 
@@ -301,16 +303,14 @@ class RegexMatcher(regex: String, private var type: IElementType) : TokenMatcher
 /**
  * Matches asp "doc comments" i.e. strings that start with `"""`
  */
-object DocCommentMatcher : TokenMatcher {
-    private const val quotes = "\"\"\""
-    private val type = PleaseTypes.DOC_COMMENT //TODO(jpoole): might want to be it's own type
+class StringLitMatcher(private val startQuote : String, private val multiLine : Boolean = false, private val endQuote : String = startQuote, private val type : IElementType) : TokenMatcher {
     override fun match(buffer: CharSequence, pos: Int): TokenMatchResult {
         return when {
-            buffer.length < pos + quotes.length -> {
+            buffer.length < pos + startQuote.length -> {
                 TokenMatchResult.NoMatch
             }
-            buffer.subSequence(pos, pos+ quotes.length).toString() == quotes -> {
-                readComment(buffer, pos)
+            buffer.subSequence(pos, pos + startQuote.length).toString() == startQuote -> {
+                readString(buffer, pos)
             }
             else -> {
                 TokenMatchResult.NoMatch
@@ -318,12 +318,15 @@ object DocCommentMatcher : TokenMatcher {
         }
     }
 
-    private fun readComment(buffer: CharSequence, pos: Int) : TokenMatchResult {
-        var endPos = pos + quotes.length
-        while (endPos + quotes.length < buffer.length) {
-            val nextChars = buffer.subSequence(endPos, endPos+ quotes.length)
-            if(nextChars.toString() == quotes) {
-                return TokenMatchResult.Match(buffer.subSequence(pos, endPos + quotes.length).toString(), type)
+    private fun readString(buffer: CharSequence, pos: Int) : TokenMatchResult {
+        var endPos = pos + endQuote.length
+        while (endPos + endQuote.length < buffer.length) {
+            val nextChars = buffer.subSequence(endPos, endPos+ endQuote.length)
+            if (!multiLine && nextChars.contains('\n')) {
+                return TokenMatchResult.NoMatch
+            }
+            if(nextChars.toString() == endQuote) {
+                return TokenMatchResult.Match(buffer.subSequence(pos, endPos + endQuote.length).toString(), type)
             }
             endPos++
         }

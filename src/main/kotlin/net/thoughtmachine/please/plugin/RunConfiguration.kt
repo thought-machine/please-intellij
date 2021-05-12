@@ -1,25 +1,37 @@
 package net.thoughtmachine.please.plugin
 
-import com.intellij.execution.Executor
-import com.intellij.execution.ProgramRunnerUtil
-import com.intellij.execution.RunManager
+import com.goide.dlv.DlvDisconnectOption
+import com.goide.execution.GoRunUtil
+import com.intellij.execution.*
 import com.intellij.execution.configurations.*
+import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.execution.executors.DefaultRunExecutor
+import com.intellij.execution.filters.TextConsoleBuilderFactory
+import com.intellij.execution.impl.ConsoleViewImpl
 import com.intellij.execution.impl.RunManagerImpl
 import com.intellij.execution.impl.RunnerAndConfigurationSettingsImpl
 import com.intellij.execution.lineMarker.RunLineMarkerContributor
 import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessHandlerFactoryImpl
+import com.intellij.execution.runners.DebuggableRunProfileState
 import com.intellij.execution.runners.ExecutionEnvironment
+import com.intellij.execution.runners.ProgramRunner
+import com.intellij.execution.ui.ConsoleView
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
+import com.intellij.profiler.dtrace.a
 import com.intellij.psi.PsiElement
 import com.intellij.psi.impl.source.tree.LeafPsiElement
+import com.intellij.xdebugger.XDebugProcess
+import com.intellij.xdebugger.XDebugSession
 import net.thoughtmachine.please.plugin.parser.psi.PleaseFunctionCall
 import net.thoughtmachine.please.plugin.parser.psi.PleaseTypes
+import org.jetbrains.concurrency.Promise
+import org.jetbrains.debugger.DebuggableRunConfiguration
+import java.net.InetSocketAddress
 import javax.swing.Icon
 import javax.swing.JComponent
 import javax.swing.JTextField
@@ -55,11 +67,8 @@ class PleaseLineMarkerProvider : RunLineMarkerContributor() {
             val target = "//${file.getPleasePackage()}:${name.trim { it == '\"' || it == '\''} }"
             return Info(
                 AllIcons.Actions.Execute, com.intellij.util.Function { "run $target" },
-                PleaseAction(element.project, "run", target, AllIcons.Actions.Execute),
-                PleaseAction(element.project, "test", target, AllIcons.Actions.Execute),
-                PleaseAction(element.project, "build", target, AllIcons.Actions.Compile)
-                // TODO(jpoole): implement this
-                // PleaseAction(element.project, "debug", target, AllIcons.Actions.StartDebugger)
+                PleaseAction(element.project, DefaultRunExecutor.getRunExecutorInstance(), target, AllIcons.Actions.Execute),
+                PleaseAction(element.project, DefaultDebugExecutor.getDebugExecutorInstance(), target, AllIcons.Actions.StartDebugger)
             )
         }
         return null
@@ -69,23 +78,23 @@ class PleaseLineMarkerProvider : RunLineMarkerContributor() {
 /**
  * This is the actual action the gutter icons perform which creates and runs a please run configuration for the target.
  */
-class PleaseAction(private val project: Project, private val action : String, private val target : String, icon : Icon) : AnAction({ "plz $action $target" }, icon) {
+class PleaseAction(private val project: Project, private val executor : Executor, private val target : String, icon : Icon) : AnAction({ "plz run $target" }, icon) {
     override fun actionPerformed(e: AnActionEvent) {
         val mgr = RunManager.getInstance(project) as RunManagerImpl
-        val runConfig = PleaseRunConfiguration(project, PleaseRunConfigurationType.Factory(PleaseRunConfigurationType()), target, action)
-        runConfig.name = "plz $action $target"
+        val runConfig = PleaseRunConfiguration(project, PleaseRunConfigurationType.Factory(PleaseRunConfigurationType()), target)
+        runConfig.name = "plz run $target"
         val config = RunnerAndConfigurationSettingsImpl(mgr, runConfig)
 
         mgr.addConfiguration(config)
 
-        ProgramRunnerUtil.executeConfiguration(config, DefaultRunExecutor())
+        ProgramRunnerUtil.executeConfiguration(config, executor)
     }
 }
 
 class PleaseRunConfigurationType : ConfigurationTypeBase("PleaseRunConfigurationType", "Please", "Run a please action on a target", PLEASE_ICON) {
     class Factory(type : PleaseRunConfigurationType) : ConfigurationFactory(type) {
         override fun createTemplateConfiguration(project: Project): RunConfiguration {
-            return PleaseRunConfiguration(project, this, "//some:target", "build")
+            return PleaseRunConfiguration(project, this, "//some:target")
         }
 
         override fun getId(): String {
@@ -114,20 +123,69 @@ class PleaseRunConfigurationSettings : SettingsEditor<PleaseRunConfiguration>() 
     }
 }
 
-class PleaseRunConfiguration(project: Project, factory: ConfigurationFactory, var target: String, var action: String) : RunConfigurationBase<PleaseLaunchState>(project, factory, "Please"){
+class PleaseRunConfiguration(project: Project, factory: ConfigurationFactory, var target: String) : LocatableConfigurationBase<RunProfileState>(project, factory, "Please"), DebuggableRunConfiguration{
     override fun getConfigurationEditor(): SettingsEditor<out RunConfiguration> {
         return PleaseRunConfigurationSettings()
     }
 
     override fun getState(executor: Executor, environment: ExecutionEnvironment): RunProfileState {
-        return PleaseLaunchState(action, target,  project.basePath!!, environment)
+        if(executor is DefaultDebugExecutor) {
+            return PleaseDebugState(target, this.project, super.computeDebugAddress(null))
+        }
+        return PleaseRunState(target,  project)
+    }
+
+    override fun computeDebugAddress(state: RunProfileState): InetSocketAddress {
+        return (state as PleaseDebugState).address
+    }
+
+    override fun createDebugProcess(
+        socketAddress: InetSocketAddress,
+        session: XDebugSession,
+        executionResult: ExecutionResult?,
+        environment: ExecutionEnvironment
+    ): XDebugProcess {
+        return GoRunUtil.createDlvDebugProcess(session, executionResult, socketAddress, true, DlvDisconnectOption.KILL)
     }
 }
 
-class PleaseLaunchState(private var action: String, private var target: String, private var projectRoot : String, environment: ExecutionEnvironment) : CommandLineState(environment) {
-    override fun startProcess(): ProcessHandler {
-        val cmd = PtyCommandLine(mutableListOf("plz", "-p", "-v", "notice", action, target))
-        cmd.setWorkDirectory(projectRoot)
+private fun (Project).createConsole(processHandler: ProcessHandler): ConsoleView {
+    val console = TextConsoleBuilderFactory.getInstance().createBuilder(this).console
+    console.attachToProcess(processHandler)
+    return console
+}
+
+class PleaseRunState(private var target: String, private var project: Project) : RunProfileState {
+    private fun startProcess(): ProcessHandler {
+        val cmd = PtyCommandLine(mutableListOf("plz", "run",  "--config=dbg", "-p", "-v", "notice", target))
+        cmd.setWorkDirectory(project.basePath!!)
         return ProcessHandlerFactoryImpl.getInstance().createColoredProcessHandler(cmd)
+    }
+
+    override fun execute(executor: Executor?, runner: ProgramRunner<*>): ExecutionResult {
+        val process = startProcess()
+        return DefaultExecutionResult(project.createConsole(process), process)
+    }
+}
+
+class PleaseDebugState(private var target: String, private var project: Project, var address: InetSocketAddress) : DebuggableRunProfileState {
+    private fun startProcess(): ProcessHandler {
+        val cmd = GeneralCommandLine(mutableListOf("/home/jpoole/please/plz-out/bin/src/please", "run", "--config=dbg", "-p", "--verbosity=notice", "--in_tmp_dir", "--cmd", "dlv exec ./\\\$OUT --api-version=2 --headless=true --listen=:${address.port}", target))
+
+        cmd.setWorkDirectory(project.basePath!!)
+        return ProcessHandlerFactoryImpl.getInstance().createColoredProcessHandler(cmd)
+    }
+
+    private fun execute() : ExecutionResult {
+        val process = startProcess()
+        return DefaultExecutionResult(project.createConsole(process), process)
+    }
+
+    override fun execute(executor: Executor?, runner: ProgramRunner<*>): ExecutionResult {
+        return execute()
+    }
+
+    override fun execute(debugPort: Int): Promise<ExecutionResult> {
+        return org.jetbrains.concurrency.resolvedPromise(execute())
     }
 }
