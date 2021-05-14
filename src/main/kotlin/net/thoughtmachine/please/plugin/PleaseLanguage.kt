@@ -2,9 +2,14 @@ package net.thoughtmachine.please.plugin
 
 import com.intellij.extapi.psi.PsiFileBase
 import com.intellij.lang.Language
+import com.intellij.notification.Notification
+import com.intellij.notification.NotificationType
+import com.intellij.notification.Notifications
 import com.intellij.openapi.fileTypes.FileType
 import com.intellij.openapi.fileTypes.LanguageFileType
+import com.intellij.openapi.project.isProjectOrWorkspaceFile
 import com.intellij.openapi.util.IconLoader
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.FileViewProvider
 import com.jetbrains.python.psi.impl.PyFileImpl
 import java.nio.file.Path
@@ -26,8 +31,10 @@ object PleaseFileType : LanguageFileType(PleaseLanguage) {
     override fun getDescription() = "Please BUILD file"
 }
 
-class PleaseFile(viewProvider: FileViewProvider) : PsiFileBase(viewProvider, PleaseLanguage) {
-    private var pkg = ""
+class PleaseFile(viewProvider: FileViewProvider) : PyFileImpl(viewProvider, PleaseLanguage) {
+    var locatedRepoRoot = false
+    private var pkg : String? = null
+    private var repo : Path? = null
 
     override fun getFileType(): FileType {
         return PleaseFileType
@@ -44,21 +51,34 @@ class PleaseFile(viewProvider: FileViewProvider) : PsiFileBase(viewProvider, Ple
     /**
      * Gets the Please package name for the File by walking up the file tree to find the .plzconfig.
      */
-    fun getPleasePackage() : String {
-        if (pkg != "") {
-            return pkg
+    fun getPleasePackage() : String? {
+        locatePleaseRepo()
+        return pkg
+    }
+
+    fun getProjectRoot() : Path? {
+        locatePleaseRepo()
+        return repo
+    }
+
+    private fun locatePleaseRepo() {
+        // TODO(jpoole): move build defs out into their own file type
+        if (locatedRepoRoot) {
+            return
         }
         var dir = Path.of(virtualFile.path).parent
         val path = mutableListOf<String>()
         while(true) {
             if(dir == null){
-                throw RuntimeException("Could not locate .plzconfig")
+                return
             }
 
             val dirFile = dir.toFile()
-            if (dir.toFile().list()!!.find { it == ".plzconfig" } != null) {
+            if (dir.toFile().list()?.find { it == ".plzconfig" } != null) {
                 pkg = path.joinToString("/")
-                return pkg
+                repo = dir.toAbsolutePath()
+                locatedRepoRoot = true
+                return
             } else {
                 path.add(0, dirFile.name)
                 dir = dir.parent

@@ -1,0 +1,267 @@
+# Contains declarations of built-in functions & objects
+
+
+# Do not change the order of arguments to this function without updating the iota in targets.go to match it.
+def build_rule(name:str, cmd:str|dict='', test_cmd:str|dict='', srcs:list|dict=None, data:list|dict=None, outs:list|dict=None,
+               deps:list=None, exported_deps:list=None, secrets:list|dict=None, tools:str|list|dict=None, test_tools:str|list|dict=None,
+               labels:list=None, visibility:list=CONFIG.DEFAULT_VISIBILITY, hashes:list=None, binary:bool=False, test:bool=False,
+               test_only:bool=CONFIG.DEFAULT_TESTONLY, building_description:str=None, needs_transitive_deps:bool=False,
+               output_is_complete:bool=False, _=None, sandbox:bool=CONFIG.BUILD_SANDBOX,
+               test_sandbox:bool=CONFIG.TEST_SANDBOX, no_test_output:bool=False, flaky:bool|int=0, build_timeout:int|str=0,
+               test_timeout:int|str=0, pre_build:function=None, post_build:function=None, requires:list=None, provides:dict=None,
+               licences:list=CONFIG.DEFAULT_LICENCES, test_outputs:list=None, system_srcs:list=None, stamp:bool=False,
+               tag:str='', optional_outs:list=None, progress:bool=False, size:str=None, _urls:list=None,
+               internal_deps:list=None, pass_env:list=None, local:bool=False, output_dirs:list=[], __=None,
+               exit_on_error:bool=CONFIG.EXIT_ON_ERROR, entry_points:dict={}, env:dict={}, _file_content:str=None):
+    pass
+
+
+def len(obj:list|dict|str) -> int:
+    pass
+def enumerate(seq:list):
+    pass
+def zip(args):
+    pass
+
+def join(self:str, seq:list) -> str:
+    pass
+def split(self:str, on:str=' ') -> list:
+    pass
+def replace(self:str, old:str, new:str):
+    pass
+def partition(self:str, sep:str) -> list:
+    pass
+def rpartition(self:str, sep:str) -> list:
+    pass
+def startswith(self:str, s:str) -> bool:
+    pass
+def endswith(self:str, s:str) -> bool:
+    pass
+def format(self:str) -> str:
+    pass
+def lstrip(self:str, cutset:str=' \n') -> str:
+    pass
+def rstrip(self:str, cutset:str=' \n') -> str:
+    pass
+def strip(self:str, cutset:str=' \n') -> str:
+    pass
+def removeprefix(self:str, prefix:str) -> str:
+    pass
+def removesuffix(self:str, suffix:str) -> str:
+    pass
+def find(self:str, needle:str) -> int:
+    pass
+def rfind(self:str, needle:str) -> int:
+    pass
+def count(self:str, needle:str) -> int:
+    pass
+def upper(self:str) -> str:
+    pass
+def lower(self:str) -> str:
+    pass
+
+def fail(msg:str):
+    pass
+
+def subinclude(target:str):
+    pass
+def load(target:str, names:str=None):
+    pass
+def subrepo(name:str, dep:str='', path:str=None, config:str=None, bazel_compat:bool=False, arch:str=None):
+    pass
+
+
+def isinstance(obj, types:function|list) -> bool:
+    pass
+
+
+def range(start:int, stop:int=None, step:int=1) -> str:
+    pass
+def any(seq:list) -> bool:
+    for x in seq:
+        if x:
+            return True
+    return False
+def all(seq:list) -> bool:
+    for x in seq:
+        if not x:
+            return False
+    return True
+
+
+def bool(b) -> bool:
+    pass
+def int(s:str) -> int:
+    pass
+def str(s) -> str:
+    pass
+def list(l):
+    fail('list is not callable')
+def dict(d):
+    fail('dict is not callable')
+
+
+def glob(include:list, exclude:list&excludes=[], hidden:bool=CONFIG.BAZEL_COMPATIBILITY) -> list:
+    pass
+
+
+def package():
+    pass
+
+
+def sorted(seq:list) -> list:
+    pass
+
+
+def get(self:dict, key:str, default=None):
+    pass
+def setdefault(self:config, key:str, default=None) -> config:
+    if key in self:
+        return self[key]
+    self[key] = default
+    return default
+def config_get(self:config, key:str, default=None) -> config:
+    pass
+
+
+def get_base_path() -> str:
+    pass
+def package_name() -> str:
+    pass
+def subrepo_name() -> str:
+    pass
+
+def canonicalise(label:str) -> str:
+    """Converts the given build label to its full form.
+
+    For example:
+      //package:target -> //package:target
+      //package -> //package:package
+      :target -> //current_package:target
+    """
+    pass
+
+
+def keys(self:dict) -> list:
+    pass
+def values(self:dict) -> list:
+    pass
+def items(self:dict) -> list:
+    pass
+def copy(self:dict) -> dict:
+    pass
+
+
+def git_branch(short:bool=True) -> str:
+    fail('Disabled in config')
+def git_commit() -> str:
+    fail('Disabled in config')
+def git_show(fmt:str) -> str:
+    fail('Disabled in config')
+def git_state(clean_label:str="clean", dirty_label:str="dirty") -> str:
+    fail('Disabled in config')
+
+def debug(args):
+    pass
+def info(args):
+    pass
+def notice(args):
+    pass
+def warning(args):
+    pass
+def error(args):
+    pass
+def fatal(args):
+    pass
+
+log = {
+    'debug': debug,
+    'info': info,
+    'notice': notice,
+    'warning': warning,
+    'error': error,
+    'fatal': fatal,
+}
+
+
+def join_path(paths:str) -> str:
+    pass  # Has to be implemented natively since it's varargs.
+
+
+def split_path(p:str) -> list:
+    before, _, after = p.rpartition('/')
+    return before, after
+
+
+def splitext(p:str) -> list:
+    before, dot, after = p.rpartition('.')
+    return (before, dot + after) if before else (after, '')
+
+
+def basename(p:str) -> str:
+    """Returns the final component of a pathname"""
+    _, _, after = p.rpartition('/')
+    return after
+
+
+def dirname(p:str) -> str:
+    """Returns the directory component of a pathname"""
+    before, _, after = p.rpartition('/')
+    return before
+
+
+def _deprecated_exception(msg):
+    log.warning('Builtin exception types are deprecated, please use fail() instead. ' +
+                'See https://github.com/thought-machine/please/issues/1598 for more information.')
+    return str(msg)
+
+# These are deprecated and will be removed in v17.
+ParseError = _deprecated_exception
+ConfigError = _deprecated_exception
+ValueError = _deprecated_exception
+
+
+# Post-build callback functions.
+def get_labels(name:str, prefix:str, all:bool=False) -> list:
+    pass
+def has_label(name:str, prefix:str, all:bool=False) -> bool:
+    return len(get_labels(name, prefix, all)) > 0
+def add_label(name:str, label:str):
+    pass
+def add_dep(target:str, dep:str, exported:bool=False):
+    pass
+def add_exported_dep(target:str, dep:str):
+    add_dep(target, dep, True)
+def add_out(target:str, name:str, out:str=''):
+    pass
+def get_outs(target:str):
+    pass
+def add_licence(target:str, licence:str):
+    pass
+def get_licences(target:str):
+    pass
+def get_command(target:str, config:str=''):
+    pass
+def set_command(target:str, config:str, command:str=''):
+    pass
+
+
+# N.B. This should really be limited so it's only visible when Bazel compat is on,
+#      but we currently don't alter the builtins for that scenario.
+def licenses(licences):
+    """Sets the default licences for the package."""
+    assert CONFIG.BAZEL_COMPATIBILITY, 'licenses() can only be called in Bazel compat mode'
+    package(default_licences = licences)
+
+
+def json(value) -> str:
+    """Returns a JSON-formatted representation of a plz value"""
+    pass
+
+
+def breakpoint():
+    """Breaks into an interactive debugging session."""
+    pass
+
+def semver_check(version:str, constraint:str) -> bool:
+    pass

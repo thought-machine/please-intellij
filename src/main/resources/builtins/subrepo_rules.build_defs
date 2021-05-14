@@ -1,0 +1,232 @@
+"""Contains rules for working with sub-repositories.
+
+These allow downloading targets from another repo and making them available here.
+Each repository has a name, which must be unique (including packages in the
+current repository).
+
+Rules in subrepos can be accessed in one of two ways:
+ - by prefixing them with the name of the repo, for example //my_repo/pkg:target
+   to access what would be //pkg:target within it.
+ - by using Bazel-style @my_repo//pkg:target syntax.
+
+These are still fairly experimental.
+"""
+
+def workspace(name:str):
+    """Defines the name of the current workspace.
+
+    Args:
+      name (str): Name to bind this workspace as.
+    """
+    subrepo(
+        name = name,
+        path = '',
+    )
+
+
+def http_archive(name:str, urls:list, strip_prefix:str=None, hashes:str|list&sha256=None,
+                 config:str=None, bazel_compat:bool=False,
+                 visibility:list=None):
+    """Fetches a remote file over HTTP and expands its contents.
+
+    The archive should be either a zipfile or a tarball. Which one to use will be autodetected
+    based on the file extension in the URL given.
+
+    This is still experimental and known not to work in many cases.
+
+    Args:
+      name: Name of the rule.
+      urls: List of URLs to fetch from. These are assumed to be mirrors and will be
+            tried in sequence.
+      strip_prefix: Prefix to strip from the expanded archive.
+      hashes: List of hashes to verify the rule with.
+      config: Configuration file to apply to this subrepo.
+      bazel_compat: Shorthand to turn on Bazel compatibility. This is equivalent to
+                    specifying a config file with `compatibility = true` in the `[bazel]`
+                    section.
+      visibility: Deprecated, has no effect.
+    """
+    return new_http_archive(
+        name = name,
+        urls = urls,
+        strip_prefix = strip_prefix,
+        hashes = hashes,
+        config = config,
+        bazel_compat = bazel_compat,
+    )
+
+
+def new_http_archive(name:str, urls:list, build_file:str=None, build_file_content:str=None,
+                     strip_prefix:str=None, strip_build:bool=False, hashes:str|list&sha256=None,
+                     config:str=None, bazel_compat:bool=False, visibility:list=None):
+    """Fetches a remote file over HTTP and expands its contents, combined with a BUILD file.
+
+    The archive should be either a zipfile or a tarball. Which one to use will be autodetected
+    based on the file extension in the URL given.
+
+    The given build file (via build_file or build_file_contents) will replace any existing file
+    and will therefore be used to build the contents of the subrepo.
+
+    This is still experimental and known not to work in many cases.
+
+    Args:
+      name: Name of the rule.
+      urls: List of URLs to fetch from. These are assumed to be mirrors and will be
+                   tried in sequence.
+      build_file: The file to use as a BUILD file for this subrepository.
+      build_file_content: Text content to use for the BUILD file for the subrepository.
+                          We suggest using build_file instead, but this is provided for Bazel compatibility.
+      strip_prefix: Prefix to strip from the expanded archive.
+      strip_build: True to strip any BUILD files from the archive after download.
+      hashes: List of hashes to verify the rule with.
+      config: Configuration file to apply to this subrepo.
+      bazel_compat: Shorthand to turn on Bazel compatibility. This is equivalent to
+                    specifying a config file with `compatibility = true` in the `[bazel]`
+                    section.
+      visibility: Deprecated, has no effect.
+    """
+    if isinstance(hashes, str):
+        hashes = [hashes]
+    remote_rule = remote_file(
+        name = name,
+        _tag = 'download',
+        url = urls,
+        out = name + '_' + basename(urls[0]),
+        hashes = hashes,
+    )
+    if strip_prefix:
+        cmd = '$TOOL x $SRCS_REMOTE -o "$OUT" -s ' + strip_prefix
+    else:
+        cmd = '$TOOL x $SRCS_REMOTE -o "$OUT"'
+    if strip_build:
+        cmd += ' && find . -name BUILD | xargs rm -f'
+    if build_file:
+        cmd += ' && mv $SRCS_BUILD "$OUT/' + CONFIG.BUILD_FILE_NAMES[0] + '"'
+    elif build_file_content:
+        cmd += ' && cat > "$OUT"/%s << EOF\n%s\nEOF' % (CONFIG.BUILD_FILE_NAMES[0], build_file_content)
+
+    extract_rule = build_rule(
+        name = name,
+        srcs = {
+            'remote': [remote_rule],
+            'build': [build_file],
+        },
+        tools = [CONFIG.JARCAT_TOOL],
+        outs = [name],
+        cmd = cmd,
+    )
+    return subrepo(
+        name = name,
+        dep = extract_rule,
+        config = config,
+        bazel_compat = bazel_compat,
+    )
+
+
+def new_local_repository(name:str, path:str):
+    """Defines a new subrepo corresponding to a directory on the local disk.
+
+    It's up to the user to make sure this repo is where this rule says it is. Typically this
+    would be managed by e.g. a CI system that checks out side-by-side git repos.
+
+    Right now this does not support specifying BUILD files as the others do. The BUILD file
+    must exist in the target directory.
+
+    Args:
+      name: The name of the subrepo to use.
+      path: The path (absolute or relative to this repo's root) to the local repository.
+    """
+    # Bit of a hack; subrepo() doesn't generate a rule, but the subrepo code internally
+    # expects there to be one by this name. Maybe we should use something like system_library
+    # to pull it in as a dependency, but that seems pretty heavyweight.
+    return subrepo(
+        name = name,
+        path = path,
+        dep = filegroup(
+            name = name,
+        ),
+    )
+
+
+def github_repo(name:str, repo:str, revision:str, build_file:str=None, hashes:str|list=None,
+                strip_prefix:str=None, strip_build:bool=False, config:str=None,
+                bazel_compat:bool=False):
+    """Defines a new subrepo corresponding to a Github project.
+
+    This is a convenience alias to the more general new_http_archive. It knows how to
+    construct Github URLs appropriately which allows a more concise description.
+
+    Args:
+      name: Name of the rule.
+      repo: Github repo to fetch from (e.g. "thought-machine/please").
+      revision: Revision to download.
+      build_file: The file to use as a BUILD file for this subrepository.
+      hashes: List of hashes to verify the rule with.
+      strip_prefix: Prefix to strip from the contents of the zip. Is usually autodetected for you.
+      strip_build: True to strip any BUILD files from the archive after download.
+      config: Configuration file to apply to this subrepo.
+      bazel_compat: Shorthand to turn on Bazel compatibility. This is equivalent to
+                    specifying a config file with `compatibility = true` in the `[bazel]`
+                    section.
+    """
+    org, _, repo = repo.partition('/')
+    assert repo, "Must pass a valid Github repo argument, e.g. thought-machine/please"
+
+    # If it looks like semver, we need to remove the v from it because github formats their zips differently for semver
+    # tags
+    #
+    # TODO(jpoole): if we ever add semver or regex to asp, we can do a better job of this
+    if len(revision.split('.')) == 3:
+        prefix = revision.removeprefix('v')
+    else:
+        prefix = revision
+
+    prefix = f'{repo}-{prefix}'
+
+    return new_http_archive(
+        name = name,
+        urls = [f'https://github.com/{org}/{repo}/archive/{revision}.zip'],
+        strip_prefix = strip_prefix or prefix,
+        strip_build = strip_build,
+        build_file = build_file,
+        hashes = hashes,
+        config = config,
+        bazel_compat = bazel_compat,
+    )
+
+
+def arch(name:str, os:str, arch:str):
+    """ Defines an architecture subrepo.
+
+    This is a convenience alias to the more general subrepo rule. It allows for a user-defined
+    subrepo for cross-built rules targeting a specific architecture. This lets users define
+    architectures that won't conflict with the subrepos implicitly instantiated by plz.
+
+    Args:
+      name: Name of the rule.
+      os:  Target operating system (e.g. "darwin")..
+      arch: Target architecture (e.g. "amd64").
+    """
+    arch_str = f'{os}_{arch}'
+    assert arch_str.count('_') == 1, "Character '_' disallowed in OS/Arch names"
+
+    return subrepo(
+        name = name,
+        path = "",
+        arch = arch_str,
+    )
+
+
+def local_repository(name:str, path:str):
+    """Defines a subrepo within the local repo.
+
+    This is mostly useful for Bazel compatibility.
+
+    Args:
+      name: Name of the rule
+      path: Path within the repo to the new root
+    """
+    return subrepo(
+        name = name,
+        path = path,
+    )

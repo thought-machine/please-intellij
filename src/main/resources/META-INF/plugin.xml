@@ -16,9 +16,9 @@
                   fieldName="INSTANCE" language="Please" extensions="plz;build_defs;build_def" fileNames="BUILD"/>
         <lang.parserDefinition language="Please"
                                implementationClass="net.thoughtmachine.please.plugin.parser.PleaseParserDefinition"/>
-<!--        <lang.syntaxHighlighterFactory language="Please"-->
-<!--                                       implementationClass="com.jetbrains.python.highlighting.PySyntaxHighlighterFactory"/>-->
-        <runLineMarkerContributor language="Please"
+        <lang.syntaxHighlighterFactory language="Please"
+                                       implementationClass="com.jetbrains.python.highlighting.PySyntaxHighlighterFactory"/>
+        <runLineMarkerContributor  language="Python"
                                         implementationClass="net.thoughtmachine.please.plugin.PleaseLineMarkerProvider"/>
         <configurationType implementation="net.thoughtmachine.please.plugin.PleaseRunConfigurationType"/>
 
@@ -26,6 +26,21 @@
                             id="net.thoughtmachine.please.plugin.PleaseLSPPreloadActivity" />
         <completion.contributor implementationClass="org.wso2.lsp4intellij.contributors.LSPCompletionContributor"
                                 id="LSPCompletionContributor" language="Please"/>
+        <localInspection language="Please" displayName="Please: Unresolved subinclude" enabledByDefault="true" level="ERROR" groupName="Please"
+                         implementationClass="net.thoughtmachine.please.plugin.subinclude.UnresolvedSubincludeInspection"/>
+        <notificationGroup id="Please" displayType="BALLOON"/>
+        <editorFactoryListener implementation="net.thoughtmachine.please.plugin.subinclude.SubincludeEditorFactoryListener"/>
+
+    </extensions>
+
+    <extensions defaultExtensionNs="Pythonid">
+        <!--  builtins  -->
+        <pyReferenceResolveProvider
+                implementation="net.thoughtmachine.please.plugin.builtins.BuiltinReferenceResolveProvider"/>
+        <!--  Resolves subincludes  -->
+        <pyReferenceResolveProvider
+                implementation="net.thoughtmachine.please.plugin.subinclude.SubincludeReferenceResolveProvider"/>
+
     </extensions>
 
     <application-components>
@@ -33,9 +48,5 @@
             <implementation-class>org.wso2.lsp4intellij.IntellijLanguageClient</implementation-class>
         </component>
     </application-components>
-
-    <actions>
-        <!-- Add your actions here -->
-    </actions>
 
 </idea-plugin>
