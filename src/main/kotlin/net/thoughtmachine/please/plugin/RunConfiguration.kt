@@ -35,10 +35,7 @@ import com.intellij.xdebugger.XDebugSession
 import com.jetbrains.python.PyElementTypes
 import com.jetbrains.python.PyStubElementTypes
 import com.jetbrains.python.PyTokenTypes
-import com.jetbrains.python.psi.PyCallExpression
-import com.jetbrains.python.psi.PyElementType
-import com.jetbrains.python.psi.PyStringLiteralExpression
-import com.jetbrains.python.psi.PyStubElementType
+import com.jetbrains.python.psi.*
 import org.jetbrains.concurrency.AsyncPromise
 import org.jetbrains.concurrency.Promise
 import org.jetbrains.concurrency.isRejected

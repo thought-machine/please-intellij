@@ -2,6 +2,7 @@ package net.thoughtmachine.please.plugin.labels
 
 import com.intellij.codeInsight.completion.*
 import com.intellij.codeInsight.lookup.LookupElementBuilder
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.patterns.PlatformPatterns
 import com.intellij.psi.util.PsiUtilCore
@@ -11,6 +12,7 @@ import net.thoughtmachine.please.plugin.PleaseFile
 import net.thoughtmachine.please.plugin.PleaseFileType
 import net.thoughtmachine.please.plugin.Target
 import java.io.File
+import java.nio.file.Path
 import java.nio.file.Paths
 
 class BuildLabelCompletionContributor : CompletionContributor() {
@@ -50,16 +52,11 @@ class BuildLabelCompletionProvider() : CompletionProvider<CompletionParameters>(
 
             if(stringText.contains(':')) {
                 val pkgDir = stringText.substringBefore(':').removePrefix("//")
-                val pkgFile = VfsUtil.findFile(Paths.get(projectRoot.toString(), pkgDir), false)?.children
-                    ?.firstOrNull { it.fileType == PleaseFileType }
+                val pleaseFile = findBuildFile(file.project, projectRoot, pkgDir) ?: return listOf()
 
-                if(pkgFile != null) {
-                    val psiFile = PsiUtilCore.getPsiFile(file.project, pkgFile)
-                    if(psiFile is PleaseFile) {
-                        return targetsForFile(psiFile, stringText.substringAfter(':'))
-                            .map { it.label.removePrefix("//") }
-                    }
-                }
+                return targetsForFile(pleaseFile, stringText.substringAfter(':'))
+                    .map { it.label.removePrefix("//") }
+
             } else {
                 val isTerminated = stringText.endsWith("/")
                 val relPath = Paths.get(stringText.removePrefix("//"))
@@ -82,4 +79,12 @@ class BuildLabelCompletionProvider() : CompletionProvider<CompletionParameters>(
         return file.targets().filter { it.name.startsWith(prefix) }
     }
 
+}
+
+fun findBuildFile(project: Project, projectRoot : Path, pkgName : String) : PleaseFile? {
+    val virtFile = VfsUtil.findFile(Paths.get(projectRoot.toString(), pkgName), false)?.children
+        ?.firstOrNull { it.fileType == PleaseFileType } ?: return null
+
+    val psiFile = PsiUtilCore.getPsiFile(project, virtFile)
+    return if(psiFile is PleaseFile) psiFile else null
 }
