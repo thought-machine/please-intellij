@@ -1,16 +1,13 @@
 package net.thoughtmachine.please.plugin
 
-import com.intellij.extapi.psi.PsiFileBase
 import com.intellij.lang.Language
-import com.intellij.notification.Notification
-import com.intellij.notification.NotificationType
-import com.intellij.notification.Notifications
 import com.intellij.openapi.fileTypes.FileType
 import com.intellij.openapi.fileTypes.LanguageFileType
-import com.intellij.openapi.project.isProjectOrWorkspaceFile
 import com.intellij.openapi.util.IconLoader
-import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.FileViewProvider
+import com.jetbrains.python.psi.PyCallExpression
+import com.jetbrains.python.psi.PyRecursiveElementVisitor
+import com.jetbrains.python.psi.PyStringLiteralExpression
 import com.jetbrains.python.psi.impl.PyFileImpl
 import java.nio.file.Path
 import javax.swing.Icon
@@ -85,4 +82,27 @@ class PleaseFile(viewProvider: FileViewProvider) : PyFileImpl(viewProvider, Plea
             }
         }
     }
+
+    fun targets() : List<Target> {
+        val pkg = getPleasePackage()
+        if(pkg != null) {
+            val visitor = TargetVisitor(pkg)
+            accept(visitor)
+            return visitor.targets
+        }
+        return listOf()
+    }
 }
+
+private class TargetVisitor(private val pkgName : String) : PyRecursiveElementVisitor() {
+    val targets = mutableListOf<Target>()
+
+    override fun visitPyCallExpression(node: PyCallExpression) {
+        val nameArg = node.argumentList?.getKeywordArgument("name")?.valueExpression
+        if(nameArg != null && nameArg is PyStringLiteralExpression) {
+            targets.add(Target("//$pkgName:${nameArg.stringValue}", nameArg.stringValue, node))
+        }
+    }
+}
+
+data class Target(val label : String, val name : String, val element: PyCallExpression)

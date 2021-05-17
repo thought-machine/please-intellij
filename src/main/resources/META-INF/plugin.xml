@@ -30,7 +30,7 @@
                          implementationClass="net.thoughtmachine.please.plugin.subinclude.UnresolvedSubincludeInspection"/>
         <notificationGroup id="Please" displayType="BALLOON"/>
         <editorFactoryListener implementation="net.thoughtmachine.please.plugin.subinclude.SubincludeEditorFactoryListener"/>
-
+        <completion.contributor language="Python" implementationClass="net.thoughtmachine.please.plugin.labels.BuildLabelCompletionContributor"/>
     </extensions>
 
     <extensions defaultExtensionNs="Pythonid">
@@ -40,7 +40,6 @@
         <!--  Resolves subincludes  -->
         <pyReferenceResolveProvider
                 implementation="net.thoughtmachine.please.plugin.subinclude.SubincludeReferenceResolveProvider"/>
-
     </extensions>
 
     <application-components>
