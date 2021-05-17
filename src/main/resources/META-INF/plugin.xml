@@ -21,9 +21,6 @@
         <runLineMarkerContributor  language="Python"
                                         implementationClass="net.thoughtmachine.please.plugin.PleaseLineMarkerProvider"/>
         <configurationType implementation="net.thoughtmachine.please.plugin.PleaseRunConfigurationType"/>
-
-        <preloadingActivity implementation="net.thoughtmachine.please.plugin.PleaseLSPPreloadActivity"
-                            id="net.thoughtmachine.please.plugin.PleaseLSPPreloadActivity" />
         <localInspection language="Please" displayName="Please: Unresolved subinclude" enabledByDefault="true" level="ERROR" groupName="Please"
                          implementationClass="net.thoughtmachine.please.plugin.subinclude.UnresolvedSubincludeInspection"/>
         <notificationGroup id="Please" displayType="BALLOON"/>

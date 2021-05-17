@@ -94,13 +94,21 @@ class PleaseFile(viewProvider: FileViewProvider) : PyFileImpl(viewProvider, Plea
     }
 }
 
+fun (PyCallExpression).asTarget(pkgName: String) : Target? {
+    val nameArg = argumentList?.getKeywordArgument("name")?.valueExpression
+    if(nameArg != null && nameArg is PyStringLiteralExpression) {
+        return Target("//$pkgName:${nameArg.stringValue}", nameArg.stringValue, this)
+    }
+    return null
+}
+
 private class TargetVisitor(private val pkgName : String) : PyRecursiveElementVisitor() {
     val targets = mutableListOf<Target>()
 
     override fun visitPyCallExpression(node: PyCallExpression) {
-        val nameArg = node.argumentList?.getKeywordArgument("name")?.valueExpression
-        if(nameArg != null && nameArg is PyStringLiteralExpression) {
-            targets.add(Target("//$pkgName:${nameArg.stringValue}", nameArg.stringValue, node))
+        val target = node.asTarget(pkgName)
+        if (target != null) {
+            targets.add(target)
         }
     }
 }
