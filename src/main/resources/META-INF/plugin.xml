@@ -19,7 +19,7 @@
         <lang.syntaxHighlighterFactory language="Please"
                                        implementationClass="com.jetbrains.python.highlighting.PySyntaxHighlighterFactory"/>
         <runLineMarkerContributor  language="Python"
-                                        implementationClass="net.thoughtmachine.please.plugin.PleaseLineMarkerProvider"/>
+                                        implementationClass="net.thoughtmachine.please.plugin.runconfiguration.PleaseLineMarkerProvider"/>
         <configurationType implementation="net.thoughtmachine.please.plugin.PleaseRunConfigurationType"/>
         <localInspection language="Please" displayName="Please: Unresolved subinclude" enabledByDefault="true" level="ERROR" groupName="Please"
                          implementationClass="net.thoughtmachine.please.plugin.subinclude.UnresolvedSubincludeInspection"/>
