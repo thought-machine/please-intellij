@@ -32,7 +32,7 @@
         <psi.symbolReferenceProvider hostElementClass="com.jetbrains.python.psi.PyStringLiteralExpression" hostLanguage="Python"
                                      implementationClass="net.thoughtmachine.please.plugin.labels.BuildLabelReferenceProvider"
                                      targetClass="com.intellij.model.psi.impl.Psi2Symbol"/>
-        <!-- adds a build icon to the run configs --!>
+        <!-- adds a build icon to the run configs -->
         <profiler.executor implementation="net.thoughtmachine.please.plugin.runconfiguration.PleaseBuildExecutor"/>
     </extensions>
 
@@ -49,11 +49,12 @@
     </extensions>
 
     <change-notes><![CDATA[
+        <h2>v1.0.1</h2>
+        <p>Added build executor which can be used to build targets from the gutter icons, or through an icon next to the
+            run configurations in the top right of the IDE.
         <h2>v1.0.0</h2>
         <p>Initial release. Added Please file types for BUILD and .build_defs. Added run configurations and gutter icons
             to run all targets and and debug go targets.
-        <h2>v1.0.1</h2>
-        <p>Added build executor which can be used to build targets from the gutter icons, or through an icon
     ]]></change-notes>
     <idea-version since-build="203.7148.57"/>
 </idea-plugin>
