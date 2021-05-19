@@ -1,4 +1,4 @@
-package net.thoughtmachine.please.plugin
+package net.thoughtmachine.please.plugin.runconfiguration
 
 import com.goide.dlv.DlvDisconnectOption
 import com.goide.execution.GoRunUtil
@@ -6,18 +6,25 @@ import com.intellij.execution.ExecutionResult
 import com.intellij.execution.Executor
 import com.intellij.execution.configurations.*
 import com.intellij.execution.executors.DefaultDebugExecutor
+import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.execution.runners.ExecutionEnvironment
+import com.intellij.icons.AllIcons
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
 import com.intellij.xdebugger.XDebugProcess
 import com.intellij.xdebugger.XDebugSession
-import net.thoughtmachine.please.plugin.runconfiguration.PleaseDebugState
-import net.thoughtmachine.please.plugin.runconfiguration.PleaseRunState
+import net.thoughtmachine.please.plugin.PLEASE_ICON
 import org.jetbrains.debugger.DebuggableRunConfiguration
 import java.net.InetSocketAddress
+import javax.swing.Icon
 import javax.swing.JComponent
 import javax.swing.JTextField
 
+object PleaseBuildExecutor : DefaultRunExecutor() {
+    override fun getIcon(): Icon {
+        return AllIcons.Actions.Compile
+    }
+}
 
 class PleaseRunConfigurationType : ConfigurationTypeBase("PleaseRunConfigurationType", "Please", "Run a please action on a target", PLEASE_ICON) {
     class Factory(type : PleaseRunConfigurationType) : ConfigurationFactory(type) {
@@ -60,6 +67,11 @@ class PleaseRunConfiguration(project: Project, factory: ConfigurationFactory, va
         if(executor is DefaultDebugExecutor) {
             return PleaseDebugState(target, this.project, super.computeDebugAddress(null))
         }
+
+        if(executor is PleaseBuildExecutor) {
+            return PleaseBuildState(target, this.project)
+        }
+
         return PleaseRunState(target,  project)
     }
 

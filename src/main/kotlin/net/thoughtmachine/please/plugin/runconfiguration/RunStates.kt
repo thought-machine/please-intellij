@@ -31,7 +31,9 @@ private fun (Project).createConsole(processHandler: ProcessHandler): ConsoleView
     return console
 }
 
+
 class PleaseRunState(private var target: String, private var project: Project) : RunProfileState {
+
     private fun startProcess(): ProcessHandler {
         val cmd = PtyCommandLine(mutableListOf("plz", "run", "-p", "-v", "notice", target))
         cmd.setWorkDirectory(project.basePath!!)
@@ -44,8 +46,23 @@ class PleaseRunState(private var target: String, private var project: Project) :
     }
 }
 
+class PleaseBuildState(private var target: String, private var project: Project) : RunProfileState {
+
+    private fun startProcess(): ProcessHandler {
+        val cmd = PtyCommandLine(mutableListOf("plz", "build", "-p", "-v", "notice", target))
+        cmd.setWorkDirectory(project.basePath!!)
+        return ProcessHandlerFactoryImpl.getInstance().createColoredProcessHandler(cmd)
+    }
+
+    override fun execute(executor: Executor?, runner: ProgramRunner<*>): ExecutionResult {
+        val process = startProcess()
+        return DefaultExecutionResult(project.createConsole(process), process)
+    }
+}
+
 class PleaseDebugState(private var target: String, private var project: Project, var address: InetSocketAddress) :
     DebuggableRunProfileState {
+
     private fun startProcess(): ProcessHandler {
         val cmd = GeneralCommandLine(mutableListOf("plz", "run", "--config=dbg", "-p", "--verbosity=notice", "--in_tmp_dir", "--cmd", "dlv exec ./\\\$OUT --api-version=2 --headless=true --listen=:${address.port}", target))
         //TODO(jpoole): this should use the files project root

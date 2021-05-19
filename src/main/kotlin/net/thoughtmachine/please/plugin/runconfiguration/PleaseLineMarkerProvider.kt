@@ -20,14 +20,12 @@ import com.jetbrains.python.psi.PyCallExpression
 import com.jetbrains.python.psi.PyStringLiteralExpression
 import net.thoughtmachine.please.plugin.PleaseBuildFileType
 import net.thoughtmachine.please.plugin.PleaseFile
-import net.thoughtmachine.please.plugin.PleaseRunConfiguration
-import net.thoughtmachine.please.plugin.PleaseRunConfigurationType
-import javax.swing.Icon
 
 /**
  * This is the actual action the gutter icons perform which creates and runs a please run configuration for the target.
  */
-class PleaseAction(private val project: Project, private val executor : Executor, private val target : String, icon : Icon) : AnAction({ "plz run $target" }, icon) {
+class PleaseAction(private val project: Project, private val executor : Executor, private val target : String) :
+    AnAction({if (executor is PleaseBuildExecutor) "plz build $target" else "plz run $target"}, executor.icon) {
     override fun actionPerformed(e: AnActionEvent) {
         val mgr = RunManager.getInstance(project) as RunManagerImpl
         val runConfig = PleaseRunConfiguration(project, PleaseRunConfigurationType.Factory(PleaseRunConfigurationType()), target)
@@ -81,8 +79,9 @@ class PleaseLineMarkerProvider : RunLineMarkerContributor() {
                 val target = "//${file.getPleasePackage()}:${expr.stringValue}"
                 return Info(
                     AllIcons.Actions.Execute, Function { "run $target" },
-                    PleaseAction(element.project, DefaultRunExecutor.getRunExecutorInstance(), target, AllIcons.Actions.Execute),
-                    PleaseAction(element.project, DefaultDebugExecutor.getDebugExecutorInstance(), target, AllIcons.Actions.StartDebugger)
+                    PleaseAction(element.project, DefaultRunExecutor.getRunExecutorInstance(), target),
+                    PleaseAction(element.project, DefaultDebugExecutor.getDebugExecutorInstance(), target),
+                    PleaseAction(element.project, PleaseBuildExecutor, target)
                 )
             }
         }
