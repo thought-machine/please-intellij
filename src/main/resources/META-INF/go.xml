@@ -1,0 +1,7 @@
+<idea-plugin>
+    <extensions defaultExtensionNs="com.intellij">
+        <runLineMarkerContributor  language="Python"
+                                   implementationClass="net.thoughtmachine.please.plugin.runconfiguration.PleaseLineMarkerProvider"/>
+        <configurationType implementation="net.thoughtmachine.please.plugin.PleaseRunConfigurationType"/>
+    </extensions>
+</idea-plugin>

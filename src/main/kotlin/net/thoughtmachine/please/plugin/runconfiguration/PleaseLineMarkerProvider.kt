@@ -18,6 +18,7 @@ import com.intellij.util.Function
 import com.jetbrains.python.PyTokenTypes
 import com.jetbrains.python.psi.PyCallExpression
 import com.jetbrains.python.psi.PyStringLiteralExpression
+import net.thoughtmachine.please.plugin.PleaseBuildFileType
 import net.thoughtmachine.please.plugin.PleaseFile
 import net.thoughtmachine.please.plugin.PleaseRunConfiguration
 import net.thoughtmachine.please.plugin.PleaseRunConfigurationType
@@ -63,6 +64,9 @@ class PleaseLineMarkerProvider : RunLineMarkerContributor() {
         }
 
         val file = element.containingFile
+        if(file.fileType != PleaseBuildFileType) {
+            return null
+        }
         if(file !is PleaseFile) {
             return null
         }

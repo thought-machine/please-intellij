@@ -5,7 +5,9 @@ import com.intellij.openapi.fileTypes.FileType
 import com.intellij.openapi.fileTypes.LanguageFileType
 import com.intellij.openapi.util.IconLoader
 import com.intellij.psi.FileViewProvider
+import com.jetbrains.python.inspections.PyInspectionExtension
 import com.jetbrains.python.psi.PyCallExpression
+import com.jetbrains.python.psi.PyFile
 import com.jetbrains.python.psi.PyRecursiveElementVisitor
 import com.jetbrains.python.psi.PyStringLiteralExpression
 import com.jetbrains.python.psi.impl.PyFileImpl
@@ -13,28 +15,38 @@ import java.nio.file.Path
 import javax.swing.Icon
 
 
-val PLEASE_ICON = IconLoader.getIcon("/icons/please.png", PleaseFileType.javaClass)
+val PLEASE_ICON = IconLoader.getIcon("/icons/please.png", PleaseBuildFileType.javaClass)
 object PleaseLanguage : Language("Please")
 
-// TODO(jpoole): We want a distinction between build_defs and BUILD files as we don't want to provide gutter icons on
-//  build_def files in the same way.
-object PleaseFileType : LanguageFileType(PleaseLanguage) {
+abstract class PleaseFileType : LanguageFileType(PleaseLanguage)
+
+object PleaseBuildFileType : PleaseFileType() {
     override fun getIcon() = PLEASE_ICON
 
-    override fun getName() = "Please"
+    override fun getName() = "Please BUILD file"
 
     override fun getDefaultExtension() = ".plz"
 
     override fun getDescription() = "Please BUILD file"
 }
 
-class PleaseFile(viewProvider: FileViewProvider) : PyFileImpl(viewProvider, PleaseLanguage) {
+object PleaseBuildDefFileType : PleaseFileType() {
+    override fun getIcon() = PLEASE_ICON
+
+    override fun getName() = "Please build_defs file"
+
+    override fun getDefaultExtension() = ".build_defs"
+
+    override fun getDescription() = "Please build definition file"
+}
+
+class PleaseFile(viewProvider: FileViewProvider, private var type : PleaseFileType) : PyFileImpl(viewProvider, PleaseLanguage) {
     var locatedRepoRoot = false
     private var pkg : String? = null
     private var repo : Path? = null
 
     override fun getFileType(): FileType {
-        return PleaseFileType
+        return type
     }
 
     override fun toString(): String {
@@ -49,6 +61,11 @@ class PleaseFile(viewProvider: FileViewProvider) : PyFileImpl(viewProvider, Plea
      * Gets the Please package name for the File by walking up the file tree to find the .plzconfig.
      */
     fun getPleasePackage() : String? {
+        // Build definitions file don't belong to a package.
+        if (type == PleaseBuildDefFileType) {
+            return null
+        }
+
         locatePleaseRepo()
         return pkg
     }
@@ -114,3 +131,9 @@ private class TargetVisitor(private val pkgName : String) : PyRecursiveElementVi
 }
 
 data class Target(val label : String, val name : String, val element: PyCallExpression)
+
+class PleasePythonInspections : PyInspectionExtension() {
+    override fun ignoreInterpreterWarnings(file: PyFile): Boolean {
+        return file is PleaseFile
+    }
+}

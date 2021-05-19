@@ -9,7 +9,7 @@ import com.intellij.psi.util.PsiUtilCore
 import com.intellij.util.ProcessingContext
 import com.jetbrains.python.psi.PyStringLiteralExpression
 import net.thoughtmachine.please.plugin.PleaseFile
-import net.thoughtmachine.please.plugin.PleaseFileType
+import net.thoughtmachine.please.plugin.PleaseBuildFileType
 import net.thoughtmachine.please.plugin.Target
 import java.io.File
 import java.nio.file.Path
@@ -22,7 +22,7 @@ class BuildLabelCompletionContributor : CompletionContributor() {
     }
 }
 
-class BuildLabelCompletionProvider() : CompletionProvider<CompletionParameters>(){
+class BuildLabelCompletionProvider : CompletionProvider<CompletionParameters>(){
     override fun addCompletions(
         parameters: CompletionParameters,
         context: ProcessingContext,
@@ -83,7 +83,7 @@ class BuildLabelCompletionProvider() : CompletionProvider<CompletionParameters>(
 
 fun findBuildFile(project: Project, projectRoot : Path, pkgName : String) : PleaseFile? {
     val virtFile = VfsUtil.findFile(Paths.get(projectRoot.toString(), pkgName), false)?.children
-        ?.firstOrNull { it.fileType == PleaseFileType } ?: return null
+        ?.firstOrNull { it.fileType == PleaseBuildFileType } ?: return null
 
     val psiFile = PsiUtilCore.getPsiFile(project, virtFile)
     return if(psiFile is PleaseFile) psiFile else null

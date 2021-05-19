@@ -1,41 +1,51 @@
 <idea-plugin>
-    <id>org.example.please-intellij</id>
-    <name>please.build</name>
+    <id>net.thoughtmachine.please.plugin</id>
+    <name>Please</name>
     <vendor email="please@thoughtmachine.net" url="https://please.build">Thought Machine</vendor>
 
     <description><![CDATA[
-        Plugin supporting the Please build system.
+        <p>Supports the Please build system's build language with some small extensions to support debugging
+        Go code. This plugin is experimental and under active development.
+        <p><a href="https://please.build">please.build</a>
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
-    <depends>Pythonid</depends>
-    <depends>org.jetbrains.plugins.go</depends>
+    <depends>com.intellij.modules.python</depends>
+    <depends optional="true" config-file="go.xml">org.jetbrains.plugins.go</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <fileType name="Please" implementationClass="net.thoughtmachine.please.plugin.PleaseFileType"
-                  fieldName="INSTANCE" language="Please" extensions="plz;build_defs;build_def" fileNames="BUILD"/>
+        <fileType name="Please BUILD file" implementationClass="net.thoughtmachine.please.plugin.PleaseBuildFileType"
+                  fieldName="INSTANCE" language="Please" extensions="plz" fileNames="BUILD"/>
+        <fileType name="Please build_defs file" implementationClass="net.thoughtmachine.please.plugin.PleaseBuildDefFileType"
+                  fieldName="INSTANCE" language="Please" extensions="build_defs;build_def"/>
         <lang.parserDefinition language="Please"
                                implementationClass="net.thoughtmachine.please.plugin.parser.PleaseParserDefinition"/>
         <lang.syntaxHighlighterFactory language="Please"
                                        implementationClass="com.jetbrains.python.highlighting.PySyntaxHighlighterFactory"/>
-        <runLineMarkerContributor  language="Python"
-                                        implementationClass="net.thoughtmachine.please.plugin.runconfiguration.PleaseLineMarkerProvider"/>
-        <configurationType implementation="net.thoughtmachine.please.plugin.PleaseRunConfigurationType"/>
+        <notificationGroup id="Please" displayType="BALLOON"/>
+        <!-- Subincludes -->
         <localInspection language="Please" displayName="Please: Unresolved subinclude" enabledByDefault="true" level="ERROR" groupName="Please"
                          implementationClass="net.thoughtmachine.please.plugin.subinclude.UnresolvedSubincludeInspection"/>
-        <notificationGroup id="Please" displayType="BALLOON"/>
         <editorFactoryListener implementation="net.thoughtmachine.please.plugin.subinclude.SubincludeEditorFactoryListener"/>
+        <!-- Build labels -->
         <completion.contributor language="Python" implementationClass="net.thoughtmachine.please.plugin.labels.BuildLabelCompletionContributor"/>
-        <psi.symbolReferenceProvider hostElementClass="com.jetbrains.python.psi.PyStringLiteralExpression" hostLanguage="Python" implementationClass="net.thoughtmachine.please.plugin.labels.BuildLabelReferenceProvider" targetClass="com.intellij.model.psi.impl.Psi2Symbol"/>
+        <psi.symbolReferenceProvider hostElementClass="com.jetbrains.python.psi.PyStringLiteralExpression" hostLanguage="Python"
+                                     implementationClass="net.thoughtmachine.please.plugin.labels.BuildLabelReferenceProvider"
+                                     targetClass="com.intellij.model.psi.impl.Psi2Symbol"/>
     </extensions>
 
     <extensions defaultExtensionNs="Pythonid">
+        <!-- Ignore irrelevant "no python interpreter" warnings -->
+        <inspectionExtension implementation="net.thoughtmachine.please.plugin.PleasePythonInspections"/>
         <!--  builtins  -->
         <pyReferenceResolveProvider
                 implementation="net.thoughtmachine.please.plugin.builtins.BuiltinReferenceResolveProvider"/>
         <!--  Resolves subincludes  -->
         <pyReferenceResolveProvider
                 implementation="net.thoughtmachine.please.plugin.subinclude.SubincludeReferenceResolveProvider"/>
+        <!-- TODO(jpoole): preloaded build defs and subincludes -->
     </extensions>
 
+    <change-notes>Initial plugin release</change-notes>
+    <idea-version since-build="203.7148.57"/>
 </idea-plugin>
