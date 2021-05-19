@@ -24,6 +24,10 @@ object PleaseBuildExecutor : DefaultRunExecutor() {
     override fun getIcon(): Icon {
         return AllIcons.Actions.Compile
     }
+
+    override fun getStartActionText(): String {
+        return "Build"
+    }
 }
 
 class PleaseRunConfigurationType : ConfigurationTypeBase("PleaseRunConfigurationType", "Please", "Run a please action on a target", PLEASE_ICON) {
