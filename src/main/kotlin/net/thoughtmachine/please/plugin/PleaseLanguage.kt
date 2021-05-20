@@ -5,6 +5,7 @@ import com.intellij.openapi.fileTypes.FileType
 import com.intellij.openapi.fileTypes.LanguageFileType
 import com.intellij.openapi.util.IconLoader
 import com.intellij.psi.FileViewProvider
+import com.intellij.util.castSafelyTo
 import com.jetbrains.python.inspections.PyInspectionExtension
 import com.jetbrains.python.psi.PyCallExpression
 import com.jetbrains.python.psi.PyFile
@@ -44,6 +45,7 @@ class PleaseFile(viewProvider: FileViewProvider, private var type : PleaseFileTy
     var locatedRepoRoot = false
     private var pkg : String? = null
     private var repo : Path? = null
+    private var subincludes : MutableSet<String>? = null
 
     override fun getFileType(): FileType {
         return type
@@ -108,6 +110,34 @@ class PleaseFile(viewProvider: FileViewProvider, private var type : PleaseFileTy
             return visitor.targets
         }
         return listOf()
+    }
+
+    fun getSubincludes() : Set<String> {
+        if(subincludes != null ) {
+            return subincludes!!
+        }
+
+        subincludes = mutableSetOf()
+        accept(SubincludeVisitor(this))
+        return subincludes!!
+    }
+
+    class SubincludeVisitor(private val file: PleaseFile) : PyRecursiveElementVisitor() {
+        override fun visitPyCallExpression(call: PyCallExpression) {
+            val functionName = call.callee?.name ?: ""
+            if(functionName != "subinclude"){
+                return
+            }
+            val includes = call.arguments.asSequence()
+                .map { it.castSafelyTo<PyStringLiteralExpression>() }.filterNotNull()
+                .toList()
+
+            includes.asSequence()
+                .map { it.castSafelyTo<PyStringLiteralExpression>() }.filterNotNull()
+                .forEach { expr ->
+                    file.subincludes!!.add(expr.stringValue)
+                }
+        }
     }
 }
 

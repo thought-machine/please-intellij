@@ -74,6 +74,10 @@ class ResolveSubincludeQuickFix(private val file: PleaseFile, private val includ
 
 class ResolveSubincludeBackgroundTask(private var file: PleaseFile, private var includes: List<String>) : Task.Backgroundable(file.project, "Update subincludes") {
     override fun run(indicator: ProgressIndicator) {
+        if(includes.isEmpty()) {
+            return
+        }
+
         indicator.text = "Updating subincludes"
         indicator.text2 = "plz build ${includes.joinToString(" ")}"
 
