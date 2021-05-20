@@ -22,28 +22,8 @@ class SubincludeEditorFactoryListener : EditorFactoryListener {
                 return
             }
 
-            file.accept(ResovledSubincludeVisitor(file))
+            ProgressManager.getInstance().run(ResolveSubincludeBackgroundTask(file, file.getSubincludes().toList()))
         }
     }
 }
 
-// TODO(jpoole): a common listener that visits subincludes (and use for the inspection too.
-class ResovledSubincludeVisitor(private val file: PleaseFile) : PyRecursiveElementVisitor() {
-    override fun visitPyCallExpression(call: PyCallExpression) {
-        val functionName = call.callee?.name ?: ""
-        if(functionName != "subinclude"){
-            return
-        }
-        val includes = call.arguments.asSequence()
-            .map { it.castSafelyTo<PyStringLiteralExpression>() }.filterNotNull()
-            .toList()
-
-        includes.asSequence()
-            .map { it.castSafelyTo<PyStringLiteralExpression>() }.filterNotNull()
-            .forEach { expr ->
-                if(!PleaseSubincludeManager.resolvedSubincludes.containsKey(expr.stringValue)) {
-                    ProgressManager.getInstance().run(ResolveSubincludeBackgroundTask(file, includes.map { it.stringValue }))
-                }
-            }
-    }
-}

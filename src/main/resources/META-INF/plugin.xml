@@ -24,11 +24,14 @@
                                        implementationClass="com.jetbrains.python.highlighting.PySyntaxHighlighterFactory"/>
         <notificationGroup id="Please" displayType="BALLOON"/>
         <!-- Subincludes -->
+        <completion.contributor language="Python" implementationClass="net.thoughtmachine.please.plugin.subinclude.SubincludeCompletionContributor"/>
         <localInspection language="Please" displayName="Please: Unresolved subinclude" enabledByDefault="true" level="ERROR" groupName="Please"
                          implementationClass="net.thoughtmachine.please.plugin.subinclude.UnresolvedSubincludeInspection"/>
         <editorFactoryListener implementation="net.thoughtmachine.please.plugin.subinclude.SubincludeEditorFactoryListener"/>
         <!-- Build labels -->
         <completion.contributor language="Python" implementationClass="net.thoughtmachine.please.plugin.labels.BuildLabelCompletionContributor"/>
+        <!-- Builtin -->
+        <completion.contributor language="Python" implementationClass="net.thoughtmachine.please.plugin.builtins.BuiltinCompletionContributor"/>
         <psi.symbolReferenceProvider hostElementClass="com.jetbrains.python.psi.PyStringLiteralExpression" hostLanguage="Python"
                                      implementationClass="net.thoughtmachine.please.plugin.labels.BuildLabelReferenceProvider"
                                      targetClass="com.intellij.model.psi.impl.Psi2Symbol"/>
@@ -49,7 +52,9 @@
     </extensions>
 
     <change-notes><![CDATA[
-        <h2>v1.0.1</h2>
+        <h2>v1.2.0</h2>
+        <p>Added auto-completion for builtins and subincludes
+        <h2>v1.1.0</h2>
         <p>Added build executor which can be used to build targets from the gutter icons, or through an icon next to the
             run configurations in the top right of the IDE.
         <h2>v1.0.0</h2>
