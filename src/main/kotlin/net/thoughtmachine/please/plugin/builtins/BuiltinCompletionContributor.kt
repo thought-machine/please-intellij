@@ -1,6 +1,5 @@
 package net.thoughtmachine.please.plugin.builtins
 
-import BuitlinSetContributor
 import com.intellij.codeInsight.completion.*
 import com.intellij.codeInsight.lookup.LookupElementBuilder
 import com.intellij.patterns.PlatformPatterns
@@ -24,7 +23,7 @@ class BuiltinCompletionProvider : CompletionProvider<CompletionParameters>(){
     ) {
         val text = parameters.position.text.removeSuffix(CompletionUtilCore.DUMMY_IDENTIFIER_TRIMMED)
 
-        return BuitlinSetContributor.PLEASE_BUILTINS.asSequence()
+        return BuiltinSetContributor.PLEASE_BUILTINS.asSequence()
             .map(PsiManager.getInstance(parameters.editor.project!!)::findFile)
             .map { it.castSafelyTo<PyFile>() }
             .filterNotNull()

@@ -35,6 +35,7 @@
         <psi.symbolReferenceProvider hostElementClass="com.jetbrains.python.psi.PyStringLiteralExpression" hostLanguage="Python"
                                      implementationClass="net.thoughtmachine.please.plugin.labels.BuildLabelReferenceProvider"
                                      targetClass="com.intellij.model.psi.impl.Psi2Symbol"/>
+        <indexedRootsProvider implementation="net.thoughtmachine.please.plugin.builtins.BuiltinSetContributor"/>
         <!-- adds a build icon to the run configs -->
         <profiler.executor implementation="net.thoughtmachine.please.plugin.runconfiguration.PleaseBuildExecutor"/>
     </extensions>
@@ -52,6 +53,8 @@
     </extensions>
 
     <change-notes><![CDATA[
+        <h2>v1.2.1</h2>
+        <p>Fixed some null pointers around completing build labels
         <h2>v1.2.0</h2>
         <p>Added auto-completion for builtins and subincludes
         <h2>v1.1.0</h2>
