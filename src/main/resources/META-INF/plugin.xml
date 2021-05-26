@@ -35,7 +35,6 @@
         <psi.symbolReferenceProvider hostElementClass="com.jetbrains.python.psi.PyStringLiteralExpression" hostLanguage="Python"
                                      implementationClass="net.thoughtmachine.please.plugin.labels.BuildLabelReferenceProvider"
                                      targetClass="com.intellij.model.psi.impl.Psi2Symbol"/>
-        <indexedRootsProvider implementation="net.thoughtmachine.please.plugin.builtins.BuiltinSetContributor"/>
         <!-- adds a build icon to the run configs -->
         <profiler.executor implementation="net.thoughtmachine.please.plugin.runconfiguration.PleaseBuildExecutor"/>
         <profiler.executor implementation="net.thoughtmachine.please.plugin.runconfiguration.PleaseTestExecutor"/>

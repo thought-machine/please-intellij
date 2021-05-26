@@ -21,24 +21,24 @@ import net.thoughtmachine.please.plugin.PleaseBuildFileType
 import net.thoughtmachine.please.plugin.PleaseFile
 
 
+fun (RunConfiguration).executeTarget(target: String, executor: Executor) {
+    val mgr = RunManager.getInstance(project) as RunManagerImpl
+    name = "plz run $target"
+    val config = RunnerAndConfigurationSettingsImpl(mgr, this)
+
+    mgr.addConfiguration(config)
+
+    ProgramRunnerUtil.executeConfiguration(config, executor)
+}
+
 /**
  * This is the actual action the gutter icons perform which creates and runs a please run configuration for the target.
  */
-open class PleaseAction(private val project: Project, private val executor : Executor, private val target : String, plzAction:String) :
+class PleaseAction(private val project: Project, private val executor : Executor, private val target : String, plzAction:String) :
     AnAction({"plz $plzAction $target"}, executor.icon) {
     override fun actionPerformed(e: AnActionEvent) {
-        val mgr = RunManager.getInstance(project) as RunManagerImpl
-        val runConfig = runConfig()
-        runConfig.name = "plz run $target"
-        val config = RunnerAndConfigurationSettingsImpl(mgr, runConfig)
-
-        mgr.addConfiguration(config)
-
-        ProgramRunnerUtil.executeConfiguration(config, executor)
-    }
-
-    open fun runConfig(): RunConfiguration {
-        return PleaseRunConfiguration(project, PleaseRunConfigurationType.Factory(PleaseRunConfigurationType()), target)
+        PleaseRunConfiguration(project, PleaseRunConfigurationType.Factory(PleaseRunConfigurationType()), target)
+            .executeTarget(target, executor)
     }
 }
 

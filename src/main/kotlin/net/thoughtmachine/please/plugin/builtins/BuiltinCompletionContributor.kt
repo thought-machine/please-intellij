@@ -23,7 +23,7 @@ class BuiltinCompletionProvider : CompletionProvider<CompletionParameters>(){
     ) {
         val text = parameters.position.text.removeSuffix(CompletionUtilCore.DUMMY_IDENTIFIER_TRIMMED)
 
-        return BuiltinSetContributor.PLEASE_BUILTINS.asSequence()
+        return PleaseBuiltins.PLEASE_BUILTINS.asSequence()
             .map(PsiManager.getInstance(parameters.editor.project!!)::findFile)
             .map { it.castSafelyTo<PyFile>() }
             .filterNotNull()

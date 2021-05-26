@@ -15,7 +15,7 @@ class BuiltinReferenceResolveProvider : PyReferenceResolveProvider {
             return emptyList()
         }
 
-        return BuiltinSetContributor.PLEASE_BUILTINS.asSequence()
+        return PleaseBuiltins.PLEASE_BUILTINS.asSequence()
             .map(PsiManager.getInstance(expression.project)::findFile)
             .map { it.castSafelyTo<PyFile>() }
             .filterNotNull()

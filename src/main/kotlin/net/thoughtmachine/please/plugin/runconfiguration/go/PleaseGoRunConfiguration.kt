@@ -15,6 +15,8 @@ import com.intellij.execution.runners.ProgramRunner
 import com.intellij.notification.Notification
 import com.intellij.notification.NotificationType
 import com.intellij.notification.Notifications
+import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.PreloadingActivity
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.progress.ProgressIndicator
@@ -31,9 +33,11 @@ import org.jetbrains.debugger.DebuggableRunConfiguration
 import java.net.InetSocketAddress
 import java.nio.charset.Charset
 
-class PleaseGoAction(private val project: Project, private val executor : Executor, private val target : String, plzAction:String) : PleaseAction(project, executor, target, plzAction) {
-    override fun runConfig() : RunConfiguration {
-        return PleaseRunConfiguration(project, PleaseGoRunConfigurationType.Factory(PleaseGoRunConfigurationType()), target)
+class PleaseGoAction(private val project: Project, private val executor : Executor, private val target : String) :
+    AnAction({"plz run $target"}, executor.icon) {
+    override fun actionPerformed(e: AnActionEvent) {
+        PleaseGoRunConfiguration(project, PleaseGoRunConfigurationType.Factory(PleaseGoRunConfigurationType()), target)
+            .executeTarget(target, executor)
     }
 }
 
@@ -143,7 +147,7 @@ class PleaseDebugState(private var target: String, private var project: Project,
 object PreloadGoRunConfig : PreloadingActivity() {
     override fun preload(indicator: ProgressIndicator) {
         PleaseLineMarkerProvider.actionProducers.add { project, target -> listOf(
-            PleaseGoAction(project, DefaultDebugExecutor.getDebugExecutorInstance(), target, "run")
+            PleaseGoAction(project, DefaultDebugExecutor.getDebugExecutorInstance(), target)
         )}
     }
 }
