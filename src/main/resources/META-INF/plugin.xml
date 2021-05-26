@@ -38,6 +38,13 @@
         <indexedRootsProvider implementation="net.thoughtmachine.please.plugin.builtins.BuiltinSetContributor"/>
         <!-- adds a build icon to the run configs -->
         <profiler.executor implementation="net.thoughtmachine.please.plugin.runconfiguration.PleaseBuildExecutor"/>
+        <profiler.executor implementation="net.thoughtmachine.please.plugin.runconfiguration.PleaseTestExecutor"/>
+        <!-- Run configurations -->
+        <runLineMarkerContributor  language="Python"
+                                   implementationClass="net.thoughtmachine.please.plugin.runconfiguration.PleaseLineMarkerProvider"/>
+        <configurationType implementation="net.thoughtmachine.please.plugin.runconfiguration.PleaseRunConfigurationType"/>
+        <preloadingActivity implementation="net.thoughtmachine.please.plugin.runconfiguration.PreloadRunConfig"/>
+
     </extensions>
 
     <extensions defaultExtensionNs="Pythonid">
@@ -53,6 +60,8 @@
     </extensions>
 
     <change-notes><![CDATA[
+        <h2>v1.3.0</h2>
+        <p>Added a test run executor and enabled build, test and run even when go not installed
         <h2>v1.2.1</h2>
         <p>Fixed some null pointers around completing build labels
         <h2>v1.2.0</h2>

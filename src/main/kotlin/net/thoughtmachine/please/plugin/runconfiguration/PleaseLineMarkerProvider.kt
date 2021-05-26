@@ -3,8 +3,7 @@ package net.thoughtmachine.please.plugin.runconfiguration
 import com.intellij.execution.Executor
 import com.intellij.execution.ProgramRunnerUtil
 import com.intellij.execution.RunManager
-import com.intellij.execution.executors.DefaultDebugExecutor
-import com.intellij.execution.executors.DefaultRunExecutor
+import com.intellij.execution.configurations.RunConfiguration
 import com.intellij.execution.impl.RunManagerImpl
 import com.intellij.execution.impl.RunnerAndConfigurationSettingsImpl
 import com.intellij.execution.lineMarker.RunLineMarkerContributor
@@ -21,14 +20,15 @@ import com.jetbrains.python.psi.PyStringLiteralExpression
 import net.thoughtmachine.please.plugin.PleaseBuildFileType
 import net.thoughtmachine.please.plugin.PleaseFile
 
+
 /**
  * This is the actual action the gutter icons perform which creates and runs a please run configuration for the target.
  */
-class PleaseAction(private val project: Project, private val executor : Executor, private val target : String) :
-    AnAction({if (executor is PleaseBuildExecutor) "plz build $target" else "plz run $target"}, executor.icon) {
+open class PleaseAction(private val project: Project, private val executor : Executor, private val target : String, plzAction:String) :
+    AnAction({"plz $plzAction $target"}, executor.icon) {
     override fun actionPerformed(e: AnActionEvent) {
         val mgr = RunManager.getInstance(project) as RunManagerImpl
-        val runConfig = PleaseRunConfiguration(project, PleaseRunConfigurationType.Factory(PleaseRunConfigurationType()), target)
+        val runConfig = runConfig()
         runConfig.name = "plz run $target"
         val config = RunnerAndConfigurationSettingsImpl(mgr, runConfig)
 
@@ -36,18 +36,21 @@ class PleaseAction(private val project: Project, private val executor : Executor
 
         ProgramRunnerUtil.executeConfiguration(config, executor)
     }
+
+    open fun runConfig(): RunConfiguration {
+        return PleaseRunConfiguration(project, PleaseRunConfigurationType.Factory(PleaseRunConfigurationType()), target)
+    }
 }
 
 /**
  * Provides gutter icons against build rules in BUILD files
  */
-class PleaseLineMarkerProvider : RunLineMarkerContributor() {
+object PleaseLineMarkerProvider : RunLineMarkerContributor() {
+    val actionProducers = mutableListOf<(Project, String) -> Collection<AnAction>>()
 
     // getInfo needs to apply the run info to the LeafPsiElement as that's what intellij demands. It looks for the
     // IDENT of the function call and applies the run actions to that.
     override fun getInfo(element: PsiElement): Info? {
-        //TODO(jpoole): check if we're inspecting a BUILD file or a .build_defs file. We're wasting our time for
-        //  build_def files as they don't contain build targets.
         if(element !is LeafPsiElement) {
             return null
         }
@@ -62,6 +65,7 @@ class PleaseLineMarkerProvider : RunLineMarkerContributor() {
         }
 
         val file = element.containingFile
+        // Skip build defs as they don't define build rules
         if(file.fileType != PleaseBuildFileType) {
             return null
         }
@@ -78,10 +82,9 @@ class PleaseLineMarkerProvider : RunLineMarkerContributor() {
                 }
                 val target = "//${file.getPleasePackage()}:${expr.stringValue}"
                 return Info(
-                    AllIcons.Actions.Execute, Function { "run $target" },
-                    PleaseAction(element.project, DefaultRunExecutor.getRunExecutorInstance(), target),
-                    PleaseAction(element.project, DefaultDebugExecutor.getDebugExecutorInstance(), target),
-                    PleaseAction(element.project, PleaseBuildExecutor, target)
+                    AllIcons.Actions.Execute,
+                    Function { "run $target" },
+                    *actionProducers.flatMap { it(element.project, target) }.toTypedArray()
                 )
             }
         }
