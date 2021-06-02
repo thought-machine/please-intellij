@@ -55,9 +55,14 @@ class BuildLabelReferenceProvider : PsiSymbolReferenceProvider {
 
                 val name = if (text.contains(":")) text.substringAfter(":") else text.substringAfterLast("/")
 
-                return pleaseFile.targets().filter { it.name == name }.map {
+                val result = pleaseFile.targets().filter { it.name == name }.map {
                     BuildLabelSymbolReference(element, PsiSymbolService.getInstance().asSymbol(it.element))
                 }
+                if(result.isNotEmpty()) {
+                    return result
+                }
+                // Jump to the file if we can't find the actual rule.
+                return listOf(BuildLabelSymbolReference(element, PsiSymbolService.getInstance().asSymbol(pleaseFile)))
             }
             else -> return mutableListOf()
         }

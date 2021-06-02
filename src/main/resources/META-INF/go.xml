@@ -1,7 +1,6 @@
 <idea-plugin>
     <extensions defaultExtensionNs="com.intellij">
-        <runLineMarkerContributor  language="Python"
-                                   implementationClass="net.thoughtmachine.please.plugin.runconfiguration.PleaseLineMarkerProvider"/>
-        <configurationType implementation="net.thoughtmachine.please.plugin.runconfiguration.PleaseRunConfigurationType"/>
+        <configurationType implementation="net.thoughtmachine.please.plugin.runconfiguration.go.PleaseGoRunConfigurationType"/>
+        <preloadingActivity implementation="net.thoughtmachine.please.plugin.runconfiguration.go.PreloadGoRunConfig"/>
     </extensions>
 </idea-plugin>

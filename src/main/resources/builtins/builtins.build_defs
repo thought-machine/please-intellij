@@ -105,7 +105,7 @@ def glob(include:list, exclude:list&excludes=[], hidden:bool=CONFIG.BAZEL_COMPAT
     pass
 
 
-def package():
+def package(**kwargs):
     pass
 
 
