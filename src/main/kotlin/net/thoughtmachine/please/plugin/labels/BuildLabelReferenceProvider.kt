@@ -31,7 +31,7 @@ class BuildLabelReferenceProvider : PsiSymbolReferenceProvider {
 
         file.virtualFile ?: return emptyList() // Can't resolve for in-memory files
 
-        val text = element.stringValue
+        val text = element.stringValue.substringBefore("|") //Ignore the entrypoint
         when {
             text.startsWith(":") -> {
                 val target = file.targets()
@@ -93,7 +93,7 @@ class BuildLabelSymbolReference(private val label: PyStringLiteralExpression, pr
     }
 
     override fun getRangeInElement(): TextRange {
-        // TODO(jpoole): we should break up the element into numerous symbols for each part of the build label so
+        // TODO(jpoole): we could break up the element into numerous symbols for each part of the build label so
         //  we can jump to the the parent folders.
         return label.stringValueTextRange
     }
