@@ -9,6 +9,8 @@ import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.jetbrains.rd.util.concurrentMapOf
 import net.thoughtmachine.please.plugin.PleaseFile
+import org.apache.commons.io.FileUtils
+import java.io.File
 import java.nio.file.Paths
 import java.util.stream.Collectors
 
@@ -29,6 +31,7 @@ object PleaseSubincludeManager {
 
         if(process.process.waitFor() == 0) {
             val files = process.process.inputStream.bufferedReader().lines()
+                .map (::resolveFilegroup)
                 .map { VfsUtil.findFile(Paths.get(fromFile.getProjectRoot().toString(), it), true) }
                 .collect(Collectors.toSet()).filterNotNull().toSet()
             resolvedSubincludes[subinclude] = files
@@ -39,5 +42,23 @@ object PleaseSubincludeManager {
         }
 
         return emptySet()
+    }
+
+    // resolveFilegroup will try and find an identical file rather than the copy in `plz-out/gen` created by the
+    // filegroup. This is useful as subincludes are usually simple filegroups.
+    private fun resolveFilegroup(filePath : String) : String {
+        try {
+            val resolvedPath = filePath.removePrefix("plz-out/gen/")
+            val origFile = File(filePath)
+            val resolvedFile = File(resolvedPath)
+
+            if (FileUtils.contentEquals(origFile, resolvedFile)) {
+                return resolvedPath
+            }
+            return filePath
+
+        } catch (ex : Exception) {
+            return filePath
+        }
     }
 }
