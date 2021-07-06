@@ -85,6 +85,17 @@ interface PleaseRunConfigurationBase : RunConfiguration {
     var pleaseArgs : String
     var programArgs : String
     var workingDir : String
+
+    fun stateFor(executor: Executor) : RunProfileState {
+        if(executor is PleaseBuildExecutor) {
+            return PleaseProfileState(target, this.project, "build", pleaseArgs, "", "")
+        }
+        if(executor is PleaseTestExecutor) {
+            // TODO(jpoole): we could parse the test output here and present it in a nice way with a custom console view
+            return PleaseProfileState(target, this.project, "test", pleaseArgs, programArgs, workingDir)
+        }
+        return PleaseProfileState(target, this.project, "run", pleaseArgs, programArgs, workingDir)
+    }
 }
 
 class PleaseRunConfiguration(
@@ -100,14 +111,7 @@ class PleaseRunConfiguration(
     }
 
     override fun getState(executor: Executor, environment: ExecutionEnvironment): RunProfileState {
-        if(executor is PleaseBuildExecutor) {
-            return PleaseProfileState(target, this.project, "build", pleaseArgs, "", "")
-        }
-        if(executor is PleaseTestExecutor) {
-            // TODO(jpoole): we could parse the test output here and present it in a nice way with a custom console view
-            return PleaseProfileState(target, this.project, "test", pleaseArgs, programArgs, workingDir)
-        }
-        return PleaseProfileState(target, this.project, "run", pleaseArgs, programArgs, workingDir)
+        return stateFor(executor)
     }
 }
 

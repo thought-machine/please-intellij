@@ -73,7 +73,10 @@ class PleaseGoRunConfiguration(
     }
 
     override fun getState(executor: Executor, environment: ExecutionEnvironment): RunProfileState {
-        return PleaseDebugState(target, pleaseArgs, programArgs, workingDir, this.project, super.computeDebugAddress(null))
+        if (executor is DefaultDebugExecutor) {
+            return PleaseDebugState(target, pleaseArgs, programArgs, workingDir, this.project, super.computeDebugAddress(null))
+        }
+        return stateFor(executor)
     }
 
     override fun computeDebugAddress(state: RunProfileState): InetSocketAddress {
