@@ -19,7 +19,7 @@ import javax.swing.JTextField
 class PleaseRunConfigurationType : ConfigurationTypeBase("PleaseRunConfigurationType", "Please", "Run a please action on a target", PLEASE_ICON) {
     class Factory(type : PleaseRunConfigurationType) : ConfigurationFactory(type) {
         override fun createTemplateConfiguration(project: Project): RunConfiguration {
-            return PleaseRunConfiguration(project, this, "//some:target", "", "")
+            return PleaseRunConfiguration(project, this, "//some:target", "", "", "")
         }
 
         override fun getId(): String {
@@ -36,12 +36,7 @@ class PleaseRunConfigurationSettings : SettingsEditor<PleaseRunConfigurationBase
     private val target = JTextField("//some:target")
     private val programArgs = JTextField()
     private val pleaseArgs = JTextField()
-
-    override fun resetEditorFrom(s: PleaseRunConfigurationBase) {
-        target.text = s.target
-        pleaseArgs.text = s.pleaseArgs
-        programArgs.text = s.programArgs
-    }
+    private val workingDir = JTextField()
 
     private fun (GridBagConstraints).addField(panel: JPanel, row: Int, name: String, field: JTextField) {
         this.fill = GridBagConstraints.HORIZONTAL
@@ -65,6 +60,7 @@ class PleaseRunConfigurationSettings : SettingsEditor<PleaseRunConfigurationBase
         constraint.addField(panel, 1, "Target", target)
         constraint.addField(panel, 2, "Program args", programArgs)
         constraint.addField(panel, 3, "Please args", pleaseArgs)
+        constraint.addField(panel, 4, "Working dir", workingDir)
 
         return panel
     }
@@ -73,6 +69,14 @@ class PleaseRunConfigurationSettings : SettingsEditor<PleaseRunConfigurationBase
         s.target = target.text
         s.pleaseArgs = pleaseArgs.text
         s.programArgs = programArgs.text
+        s.workingDir = workingDir.text
+    }
+
+    override fun resetEditorFrom(s: PleaseRunConfigurationBase) {
+        target.text = s.target
+        pleaseArgs.text = s.pleaseArgs
+        programArgs.text = s.programArgs
+        workingDir.text = s.workingDir
     }
 }
 
@@ -80,6 +84,7 @@ interface PleaseRunConfigurationBase : RunConfiguration {
     var target : String
     var pleaseArgs : String
     var programArgs : String
+    var workingDir : String
 }
 
 class PleaseRunConfiguration(
@@ -87,7 +92,8 @@ class PleaseRunConfiguration(
     factory: ConfigurationFactory,
     override var target: String,
     override var pleaseArgs: String,
-    override var programArgs: String
+    override var programArgs: String,
+    override var workingDir: String
 ) : LocatableConfigurationBase<RunProfileState>(project, factory, "Please"), PleaseRunConfigurationBase {
     override fun getConfigurationEditor(): SettingsEditor<out RunConfiguration> {
         return PleaseRunConfigurationSettings()
@@ -95,13 +101,13 @@ class PleaseRunConfiguration(
 
     override fun getState(executor: Executor, environment: ExecutionEnvironment): RunProfileState {
         if(executor is PleaseBuildExecutor) {
-            return PleaseProfileState(target, this.project, "build", pleaseArgs, "")
+            return PleaseProfileState(target, this.project, "build", pleaseArgs, "", "")
         }
         if(executor is PleaseTestExecutor) {
             // TODO(jpoole): we could parse the test output here and present it in a nice way with a custom console view
-            return PleaseProfileState(target, this.project, "test", pleaseArgs, programArgs)
+            return PleaseProfileState(target, this.project, "test", pleaseArgs, programArgs, workingDir)
         }
-        return PleaseProfileState(target, this.project, "run", pleaseArgs, programArgs)
+        return PleaseProfileState(target, this.project, "run", pleaseArgs, programArgs, workingDir)
     }
 }
 

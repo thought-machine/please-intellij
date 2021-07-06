@@ -37,7 +37,7 @@ fun (RunConfiguration).executeTarget(target: String, executor: Executor) {
 class PleaseAction(private val project: Project, private val executor : Executor, private val target : String, plzAction:String) :
     AnAction({"plz $plzAction $target"}, executor.icon) {
     override fun actionPerformed(e: AnActionEvent) {
-        PleaseRunConfiguration(project, PleaseRunConfigurationType.Factory(PleaseRunConfigurationType()), target, "", "")
+        PleaseRunConfiguration(project, PleaseRunConfigurationType.Factory(PleaseRunConfigurationType()), target, "", "", "")
             .executeTarget(target, executor)
     }
 }

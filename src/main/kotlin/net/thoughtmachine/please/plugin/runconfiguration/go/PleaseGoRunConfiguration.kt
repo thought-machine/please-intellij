@@ -37,7 +37,7 @@ import java.nio.charset.Charset
 class PleaseGoAction(private val project: Project, private val executor : Executor, private val target : String) :
     AnAction({"plz run $target"}, executor.icon) {
     override fun actionPerformed(e: AnActionEvent) {
-        PleaseGoRunConfiguration(project, PleaseGoRunConfigurationType.Factory(PleaseGoRunConfigurationType()), target, "", "")
+        PleaseGoRunConfiguration(project, PleaseGoRunConfigurationType.Factory(PleaseGoRunConfigurationType()), target, "", "", "")
             .executeTarget(target, executor)
     }
 }
@@ -45,7 +45,7 @@ class PleaseGoAction(private val project: Project, private val executor : Execut
 class PleaseGoRunConfigurationType : ConfigurationTypeBase("PleaseGoRunConfigurationType", "Please (Golang)", "Run a please action on a target", PLEASE_ICON) {
     class Factory(type : PleaseGoRunConfigurationType) : ConfigurationFactory(type) {
         override fun createTemplateConfiguration(project: Project): RunConfiguration {
-            return PleaseGoRunConfiguration(project, this, "//some:target", "", "")
+            return PleaseGoRunConfiguration(project, this, "//some:target", "", "", "")
         }
 
         override fun getId(): String {
@@ -58,7 +58,14 @@ class PleaseGoRunConfigurationType : ConfigurationTypeBase("PleaseGoRunConfigura
     }
 }
 
-class PleaseGoRunConfiguration(project: Project, factory: ConfigurationFactory, override var target: String, override var pleaseArgs: String, override var programArgs: String) :
+class PleaseGoRunConfiguration(
+    project: Project,
+    factory: ConfigurationFactory,
+    override var target: String,
+    override var pleaseArgs: String,
+    override var programArgs: String,
+    override var workingDir: String
+) :
     LocatableConfigurationBase<RunProfileState>(project, factory, "Please (Golang)"), DebuggableRunConfiguration, PleaseRunConfigurationBase {
 
     override fun getConfigurationEditor(): SettingsEditor<out RunConfiguration> {
@@ -66,7 +73,7 @@ class PleaseGoRunConfiguration(project: Project, factory: ConfigurationFactory, 
     }
 
     override fun getState(executor: Executor, environment: ExecutionEnvironment): RunProfileState {
-        return PleaseDebugState(target, pleaseArgs, programArgs, this.project, super.computeDebugAddress(null))
+        return PleaseDebugState(target, pleaseArgs, programArgs, workingDir, this.project, super.computeDebugAddress(null))
     }
 
     override fun computeDebugAddress(state: RunProfileState): InetSocketAddress {
@@ -93,14 +100,16 @@ class PleaseDebugState(
     private var target: String,
     private var pleaseArgs : String,
     private var programArgs: String,
+    private var workingDir: String,
     private var project: Project,
     var address: InetSocketAddress
 ) : DebuggableRunProfileState {
 
     private fun startProcess(): ProcessHandler {
         val plzArgs = Commandline.translateCommandline(pleaseArgs)
+        val wd = if(workingDir == "") "." else workingDir
         val cmd = GeneralCommandLine(mutableListOf("plz", "run", target,  "--config=dbg", "-p", "--verbosity=notice",
-            "--in_tmp_dir", "--cmd", "dlv exec ./\\\$OUT --api-version=2 --headless=true --listen=:${address.port} -- $programArgs") + plzArgs)
+            "--in_tmp_dir", "--cmd", "dlv exec \\\$PWD/\\\$OUT --api-version=2 --headless=true --listen=:${address.port} --wd=$wd -- $programArgs") + plzArgs)
         //TODO(jpoole): this should use the files project root
         cmd.setWorkDirectory(project.basePath!!)
         return ProcessHandlerFactoryImpl.getInstance().createColoredProcessHandler(cmd)
