@@ -61,7 +61,7 @@
     <change-notes><![CDATA[
         <h2>v1.3.0</h2>
         <p>Made run configurations work without having Go installed for build, run and test.
-        <p>Made subincludes resolve to the file in the source tree rather than plz-out/gen when they're identicle files
+        <p>Made subincludes resolve to the file in the source tree rather than plz-out/gen when they're identical files
         <h2>v1.2.1</h2>
         <p>Fixed some null pointers around completing build labels
         <h2>v1.2.0</h2>

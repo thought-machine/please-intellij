@@ -27,6 +27,7 @@ import com.intellij.xdebugger.XDebugProcess
 import com.intellij.xdebugger.XDebugSession
 import net.thoughtmachine.please.plugin.PLEASE_ICON
 import net.thoughtmachine.please.plugin.runconfiguration.*
+import org.apache.tools.ant.types.Commandline
 import org.jetbrains.concurrency.AsyncPromise
 import org.jetbrains.concurrency.Promise
 import org.jetbrains.debugger.DebuggableRunConfiguration
@@ -36,15 +37,15 @@ import java.nio.charset.Charset
 class PleaseGoAction(private val project: Project, private val executor : Executor, private val target : String) :
     AnAction({"plz run $target"}, executor.icon) {
     override fun actionPerformed(e: AnActionEvent) {
-        PleaseGoRunConfiguration(project, PleaseGoRunConfigurationType.Factory(PleaseGoRunConfigurationType()), target)
+        PleaseGoRunConfiguration(project, PleaseGoRunConfigurationType.Factory(PleaseGoRunConfigurationType()), target, "", "")
             .executeTarget(target, executor)
     }
 }
 
-class PleaseGoRunConfigurationType : ConfigurationTypeBase("PleaseGoRunConfigurationType", "Please", "Run a please action on a target", PLEASE_ICON) {
+class PleaseGoRunConfigurationType : ConfigurationTypeBase("PleaseGoRunConfigurationType", "Please (Golang)", "Run a please action on a target", PLEASE_ICON) {
     class Factory(type : PleaseGoRunConfigurationType) : ConfigurationFactory(type) {
         override fun createTemplateConfiguration(project: Project): RunConfiguration {
-            return PleaseGoRunConfiguration(project, this, "//some:target")
+            return PleaseGoRunConfiguration(project, this, "//some:target", "", "")
         }
 
         override fun getId(): String {
@@ -57,15 +58,15 @@ class PleaseGoRunConfigurationType : ConfigurationTypeBase("PleaseGoRunConfigura
     }
 }
 
-class PleaseGoRunConfiguration(project: Project, factory: ConfigurationFactory, var target: String) :
-    LocatableConfigurationBase<RunProfileState>(project, factory, "Please"), DebuggableRunConfiguration {
+class PleaseGoRunConfiguration(project: Project, factory: ConfigurationFactory, override var target: String, override var pleaseArgs: String, override var programArgs: String) :
+    LocatableConfigurationBase<RunProfileState>(project, factory, "Please (Golang)"), DebuggableRunConfiguration, PleaseRunConfigurationBase {
 
     override fun getConfigurationEditor(): SettingsEditor<out RunConfiguration> {
         return PleaseRunConfigurationSettings()
     }
 
     override fun getState(executor: Executor, environment: ExecutionEnvironment): RunProfileState {
-        return PleaseDebugState(target, this.project, super.computeDebugAddress(null))
+        return PleaseDebugState(target, pleaseArgs, programArgs, this.project, super.computeDebugAddress(null))
     }
 
     override fun computeDebugAddress(state: RunProfileState): InetSocketAddress {
@@ -88,12 +89,18 @@ class PleaseGoRunConfiguration(project: Project, factory: ConfigurationFactory, 
     }
 }
 
-class PleaseDebugState(private var target: String, private var project: Project, var address: InetSocketAddress) :
-    DebuggableRunProfileState {
+class PleaseDebugState(
+    private var target: String,
+    private var pleaseArgs : String,
+    private var programArgs: String,
+    private var project: Project,
+    var address: InetSocketAddress
+) : DebuggableRunProfileState {
 
     private fun startProcess(): ProcessHandler {
-        val cmd = GeneralCommandLine(mutableListOf("plz", "run", "--config=dbg", "-p", "--verbosity=notice",
-            "--in_tmp_dir", "--cmd", "dlv exec ./\\\$OUT --api-version=2 --headless=true --listen=:${address.port}", target))
+        val plzArgs = Commandline.translateCommandline(pleaseArgs)
+        val cmd = GeneralCommandLine(mutableListOf("plz", "run", target,  "--config=dbg", "-p", "--verbosity=notice",
+            "--in_tmp_dir", "--cmd", "dlv exec ./\\\$OUT --api-version=2 --headless=true --listen=:${address.port} -- $programArgs") + plzArgs)
         //TODO(jpoole): this should use the files project root
         cmd.setWorkDirectory(project.basePath!!)
         return ProcessHandlerFactoryImpl.getInstance().createColoredProcessHandler(cmd)
