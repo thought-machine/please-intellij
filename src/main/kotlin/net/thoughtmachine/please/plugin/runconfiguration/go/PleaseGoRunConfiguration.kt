@@ -69,7 +69,7 @@ class PleaseGoRunConfiguration(
     LocatableConfigurationBase<RunProfileState>(project, factory, "Please (Golang)"), DebuggableRunConfiguration, PleaseRunConfigurationBase {
 
     override fun getConfigurationEditor(): SettingsEditor<out RunConfiguration> {
-        return PleaseRunConfigurationSettings()
+        return PleaseRunConfigurationSettings(true)
     }
 
     override fun getState(executor: Executor, environment: ExecutionEnvironment): RunProfileState {
@@ -141,8 +141,11 @@ class PleaseDebugState(
             }
 
             override fun run(indicator: ProgressIndicator) {
-
-                val cmd = GeneralCommandLine(mutableListOf("plz", "--config=dbg", "build", "-p", "-v", "notice", target))
+                val cmd = GeneralCommandLine(
+                    mutableListOf("plz", "--config=dbg", "build", "-p", "-v", "notice") +
+                            Commandline.translateCommandline(pleaseArgs) +
+                            listOf(target)
+                )
                 cmd.setWorkDirectory(project.basePath!!)
                 cmd.isRedirectErrorStream = true
                 val process = ProcessHandlerFactoryImpl.getInstance().createColoredProcessHandler(cmd)

@@ -32,7 +32,7 @@ class PleaseRunConfigurationType : ConfigurationTypeBase("PleaseRunConfiguration
     }
 }
 
-class PleaseRunConfigurationSettings : SettingsEditor<PleaseRunConfigurationBase>() {
+class PleaseRunConfigurationSettings(private val showWorkingDirField: Boolean) : SettingsEditor<PleaseRunConfigurationBase>() {
     private val target = JTextField("//some:target")
     private val programArgs = JTextField()
     private val pleaseArgs = JTextField()
@@ -60,7 +60,9 @@ class PleaseRunConfigurationSettings : SettingsEditor<PleaseRunConfigurationBase
         constraint.addField(panel, 1, "Target", target)
         constraint.addField(panel, 2, "Program args", programArgs)
         constraint.addField(panel, 3, "Please args", pleaseArgs)
-        constraint.addField(panel, 4, "Working dir", workingDir)
+        if (showWorkingDirField) {
+            constraint.addField(panel, 4, "Working dir", workingDir)
+        }
 
         return panel
     }
@@ -88,13 +90,13 @@ interface PleaseRunConfigurationBase : RunConfiguration {
 
     fun stateFor(executor: Executor) : RunProfileState {
         if(executor is PleaseBuildExecutor) {
-            return PleaseProfileState(target, this.project, "build", pleaseArgs, "", "")
+            return PleaseProfileState(target, this.project, "build", pleaseArgs, "")
         }
         if(executor is PleaseTestExecutor) {
             // TODO(jpoole): we could parse the test output here and present it in a nice way with a custom console view
-            return PleaseProfileState(target, this.project, "test", pleaseArgs, programArgs, workingDir)
+            return PleaseProfileState(target, this.project, "test", pleaseArgs, programArgs)
         }
-        return PleaseProfileState(target, this.project, "run", pleaseArgs, programArgs, workingDir)
+        return PleaseProfileState(target, this.project, "run", pleaseArgs, programArgs)
     }
 }
 
@@ -107,7 +109,7 @@ class PleaseRunConfiguration(
     override var workingDir: String
 ) : LocatableConfigurationBase<RunProfileState>(project, factory, "Please"), PleaseRunConfigurationBase {
     override fun getConfigurationEditor(): SettingsEditor<out RunConfiguration> {
-        return PleaseRunConfigurationSettings()
+        return PleaseRunConfigurationSettings(false)
     }
 
     override fun getState(executor: Executor, environment: ExecutionEnvironment): RunProfileState {

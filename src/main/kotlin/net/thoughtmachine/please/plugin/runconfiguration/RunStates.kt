@@ -43,16 +43,11 @@ class PleaseProfileState(
     private var project: Project,
     private val cmd : String,
     private val pleaseArgs : String,
-    private val programArgs : String,
-    private val workingDir: String
+    private val programArgs : String
 ) : RunProfileState {
     private fun startProcess(): ProcessHandler {
         val plzArgs = Commandline.translateCommandline(pleaseArgs)
-        val progArgs = if (workingDir != "") {
-             Commandline.translateCommandline("$programArgs --in_wd=$workingDir")
-        } else {
-            Commandline.translateCommandline(programArgs)
-        }
+        val progArgs = Commandline.translateCommandline(programArgs)
 
         val cmd = PtyCommandLine(mutableListOf("plz", cmd, "-p", "-v", "notice", target) + plzArgs + listOf("--") + progArgs)
         cmd.setWorkDirectory(project.basePath!!)
