@@ -21,18 +21,17 @@ object PleaseSubincludeManager {
             return resolvedSubincludes[subinclude]!!
         }
 
+        val projectRoot = fromFile.getProjectRoot() ?: return emptySet()
+
         val cmd = GeneralCommandLine("plz query outputs $subinclude".split(" "))
-        if(fromFile.getProjectRoot() == null){
-            return setOf()
-        }
-        cmd.workDirectory = fromFile.getProjectRoot()!!.toFile()
+        cmd.workDirectory = projectRoot.toFile()
 
         val process = ProcessHandlerFactory.getInstance().createProcessHandler(cmd)
 
         if(process.process.waitFor() == 0) {
             val files = process.process.inputStream.bufferedReader().lines()
                 .map (::resolveFilegroup)
-                .map { VfsUtil.findFile(Paths.get(fromFile.getProjectRoot().toString(), it), true) }
+                .map { VfsUtil.findFile(Paths.get(projectRoot.toString(), it), true) }
                 .collect(Collectors.toSet()).filterNotNull().toSet()
             resolvedSubincludes[subinclude] = files
             return files

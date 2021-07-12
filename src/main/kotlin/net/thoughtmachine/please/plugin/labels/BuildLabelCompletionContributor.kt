@@ -48,9 +48,11 @@ class BuildLabelCompletionProvider : CompletionProvider<CompletionParameters>() 
                 .map { it.name }
         }
 
+        val projectRoot = file.getProjectRoot() ?: return emptyList()
+
         // TODO(jpoole): codify this with a subcommand or something
         val cmd = GeneralCommandLine("plz query alltargets $stringText".split(" "))
-        cmd.workDirectory = file.getProjectRoot()!!.toFile()
+        cmd.workDirectory = projectRoot.toFile()
         cmd.environment["GO_FLAGS_COMPLETION"] = "1"
 
         val process = ProcessHandlerFactory.getInstance().createProcessHandler(cmd)
