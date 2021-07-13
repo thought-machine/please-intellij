@@ -78,16 +78,17 @@ class ResolveSubincludeBackgroundTask(private var file: PleaseFile, private var 
             return
         }
 
+        val projectRoot = file.getProjectRoot() ?: return
+
         indicator.text = "Updating subincludes"
         indicator.text2 = "plz build ${includes.joinToString(" ")}"
+
 
         val args = arrayOf("plz", "build") + includes
         val cmd = GeneralCommandLine(*args)
         cmd.isRedirectErrorStream = true
-        if(file.getProjectRoot() == null) {
-            return
-        }
-        cmd.workDirectory = file.getProjectRoot()!!.toFile()
+
+        cmd.workDirectory = projectRoot.toFile()
         val process = ProcessHandlerFactory.getInstance().createProcessHandler(cmd)
 
         if(process.process.waitFor() == 0) {
