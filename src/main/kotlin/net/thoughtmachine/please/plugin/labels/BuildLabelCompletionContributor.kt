@@ -50,21 +50,20 @@ class BuildLabelCompletionProvider : CompletionProvider<CompletionParameters>() 
 
         val projectRoot = file.getProjectRoot() ?: return emptyList()
 
-        // TODO(jpoole): codify this with a subcommand or something
-        val cmd = GeneralCommandLine("plz query alltargets $stringText".split(" "))
+        val cmd = GeneralCommandLine("plz query completions $stringText".split(" "))
         cmd.workDirectory = projectRoot.toFile()
-        cmd.environment["GO_FLAGS_COMPLETION"] = "1"
 
         val process = ProcessHandlerFactory.getInstance().createProcessHandler(cmd)
 
         return if (process.process.waitFor() == 0) {
+            // Large numbers of results here seem to break intellij
             process.process.inputStream.bufferedReader().lines()
                 .map { it.removePrefix("//").removePrefix(":") }
-                .collect(Collectors.toList())
+                .collect(Collectors.toList()).take(50)
         } else {
             val error = String(process.process.inputStream.readAllBytes())
             Notifications.Bus.notify(Notification("Please", "Failed to complete label", error, NotificationType.ERROR))
-            listOf()
+            emptyList()
         }
     }
 
