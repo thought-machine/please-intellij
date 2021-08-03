@@ -13,6 +13,10 @@
     <depends>com.intellij.modules.python</depends>
     <depends optional="true" config-file="go.xml">org.jetbrains.plugins.go</depends>
 
+    <applicationListeners>
+        <listener class="net.thoughtmachine.please.plugin.subinclude.DeletedSubincludeListener" topic="com.intellij.openapi.vfs.newvfs.BulkFileListener"/>
+    </applicationListeners>
+
     <extensions defaultExtensionNs="com.intellij">
         <fileType name="Please BUILD file" implementationClass="net.thoughtmachine.please.plugin.PleaseBuildFileType"
                   fieldName="INSTANCE" language="Please" extensions="plz" fileNames="BUILD"/>
@@ -43,7 +47,6 @@
                                    implementationClass="net.thoughtmachine.please.plugin.runconfiguration.PleaseLineMarkerProvider"/>
         <configurationType implementation="net.thoughtmachine.please.plugin.runconfiguration.PleaseRunConfigurationType"/>
         <preloadingActivity implementation="net.thoughtmachine.please.plugin.runconfiguration.PreloadRunConfig"/>
-
     </extensions>
 
     <extensions defaultExtensionNs="Pythonid">

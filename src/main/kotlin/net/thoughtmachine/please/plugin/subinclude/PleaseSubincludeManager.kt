@@ -7,7 +7,12 @@ import com.intellij.notification.NotificationType
 import com.intellij.notification.Notifications
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.openapi.vfs.newvfs.BulkFileListener
+import com.intellij.openapi.vfs.newvfs.events.VFileDeleteEvent
+import com.intellij.openapi.vfs.newvfs.events.VFileEvent
+import com.intellij.openapi.vfs.newvfs.events.VFileMoveEvent
 import com.jetbrains.rd.util.concurrentMapOf
+import com.jetbrains.rd.util.first
 import net.thoughtmachine.please.plugin.PleaseFile
 import org.apache.commons.io.FileUtils
 import java.io.File
@@ -18,7 +23,12 @@ object PleaseSubincludeManager {
     val resolvedSubincludes = concurrentMapOf<String, Set<VirtualFile>>()
     fun resolveSubinclude(fromFile : PleaseFile, subinclude: String): Set<VirtualFile> {
         if(resolvedSubincludes.containsKey(subinclude)) {
-            return resolvedSubincludes[subinclude]!!
+            val includes = resolvedSubincludes[subinclude]!!
+            // Check if the file has been deleted since we last resolved it
+            if (includes.all { it.exists() }) {
+                return includes
+            }
+            resolvedSubincludes.remove(subinclude)
         }
 
         val projectRoot = fromFile.getProjectRoot() ?: return emptySet()
@@ -33,6 +43,7 @@ object PleaseSubincludeManager {
                 .map (::resolveFilegroup)
                 .map { VfsUtil.findFile(Paths.get(projectRoot.toString(), it), true) }
                 .collect(Collectors.toSet()).filterNotNull().toSet()
+
             resolvedSubincludes[subinclude] = files
             return files
         } else {
@@ -59,5 +70,18 @@ object PleaseSubincludeManager {
         } catch (ex : Exception) {
             return filePath
         }
+    }
+}
+
+class DeletedSubincludeListener : BulkFileListener {
+    override fun before(events: List<VFileEvent>) {
+        events
+            .filter { it is VFileDeleteEvent || it is VFileMoveEvent }
+            .mapNotNull { it.file }
+            .forEach { changedFile ->
+                PleaseSubincludeManager.resolvedSubincludes
+                    .filter { it.value.contains(changedFile) }
+                    .forEach {PleaseSubincludeManager.resolvedSubincludes.remove(it.key)}
+            }
     }
 }
