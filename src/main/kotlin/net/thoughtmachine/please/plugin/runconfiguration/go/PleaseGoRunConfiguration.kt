@@ -111,8 +111,13 @@ class PleaseDebugState(
     private fun startProcess(): ProcessHandler {
         val plzArgs = Commandline.translateCommandline(pleaseArgs)
         val wd = if(workingDir == "") "." else workingDir
-        val cmd = GeneralCommandLine(mutableListOf("plz", "run", target,  "--config=dbg", "-p", "--verbosity=notice",
-            "--in_tmp_dir", "--cmd", "dlv exec \\\$PWD/\\\$OUT --api-version=2 --headless=true --listen=:${address.port} --wd=$wd -- $programArgs") + plzArgs)
+
+        val plzCmd = listOf("plz", "exec", target,  "--config=dbg", "-p", "--verbosity=info", "--share_network") + plzArgs
+        val execCmd = listOf("dlv", "exec", "\\\$PWD/\\\$OUT", "--api-version=2", "--headless=true",
+            "--listen=:${address.port}", "--wd=$wd", "--", programArgs)
+
+        val cmd = GeneralCommandLine(plzCmd + listOf("--") + execCmd)
+
         //TODO(jpoole): this should use the files project root
         cmd.setWorkDirectory(project.basePath!!)
         return ProcessHandlerFactoryImpl.getInstance().createColoredProcessHandler(cmd)
