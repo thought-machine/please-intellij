@@ -64,7 +64,13 @@ class BuildLabelReferenceProvider : PsiSymbolReferenceProvider {
                 // Jump to the file if we can't find the actual rule.
                 return listOf(BuildLabelSymbolReference(element, PsiSymbolService.getInstance().asSymbol(pleaseFile)))
             }
-            else -> return mutableListOf()
+            else -> {
+                val fileLabel = file.containingDirectory?.files?.find { it.name ==  text}
+                if (fileLabel !=  null) {
+                    return listOf(BuildLabelSymbolReference(element, PsiSymbolService.getInstance().asSymbol(fileLabel)))
+                }
+                return emptyList()
+            }
         }
 
     }

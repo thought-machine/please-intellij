@@ -49,7 +49,7 @@ class PleaseProfileState(
         val plzArgs = Commandline.translateCommandline(pleaseArgs)
         val progArgs = Commandline.translateCommandline(programArgs)
 
-        val cmd = PtyCommandLine(mutableListOf("plz", cmd, "-p", "-v", "notice", target) + plzArgs + listOf("--") + progArgs)
+        val cmd = PtyCommandLine(mutableListOf("plz", cmd, "-p", "-v", "info", target) + plzArgs + listOf("--") + progArgs)
         cmd.setWorkDirectory(project.basePath!!)
         return ProcessHandlerFactoryImpl.getInstance().createColoredProcessHandler(cmd)
     }

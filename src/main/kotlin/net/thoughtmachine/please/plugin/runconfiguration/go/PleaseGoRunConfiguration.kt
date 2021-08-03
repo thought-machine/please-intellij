@@ -142,7 +142,7 @@ class PleaseDebugState(
 
             override fun run(indicator: ProgressIndicator) {
                 val cmd = GeneralCommandLine(
-                    mutableListOf("plz", "--config=dbg", "build", "-p", "-v", "notice") +
+                    mutableListOf("plz", "--config=dbg", "build", "-p", "-v", "info") +
                             Commandline.translateCommandline(pleaseArgs) +
                             listOf(target)
                 )
