@@ -13,7 +13,7 @@ import com.intellij.execution.runners.ProgramRunner
 import com.intellij.execution.ui.ConsoleView
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.project.Project
-import org.apache.tools.ant.types.Commandline
+import net.thoughtmachine.please.plugin.runconfiguration.pleasecommandline.PleaseCommand
 import javax.swing.Icon
 
 object PleaseBuildExecutor : DefaultRunExecutor() {
@@ -39,17 +39,11 @@ fun (Project).createConsole(processHandler: ProcessHandler): ConsoleView {
 }
 
 class PleaseProfileState(
-    private var target: String,
     private var project: Project,
-    private val cmd : String,
-    private val pleaseArgs : String,
-    private val programArgs : String
+    private var pleaseCommand: PleaseCommand
 ) : RunProfileState {
     private fun startProcess(): ProcessHandler {
-        val plzArgs = Commandline.translateCommandline(pleaseArgs)
-        val progArgs = Commandline.translateCommandline(programArgs)
-
-        val cmd = PtyCommandLine(mutableListOf("plz", cmd, "-p", "-v", "info", target) + plzArgs + listOf("--") + progArgs)
+        val cmd = PtyCommandLine(pleaseCommand)
         cmd.setWorkDirectory(project.basePath!!)
         return ProcessHandlerFactoryImpl.getInstance().createColoredProcessHandler(cmd)
     }

@@ -9,6 +9,7 @@ import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
 import net.thoughtmachine.please.plugin.PLEASE_ICON
+import net.thoughtmachine.please.plugin.runconfiguration.pleasecommandline.Please
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import javax.swing.JComponent
@@ -19,7 +20,7 @@ import javax.swing.JTextField
 class PleaseRunConfigurationType : ConfigurationTypeBase("PleaseRunConfigurationType", "Please", "Run a please action on a target", PLEASE_ICON) {
     class Factory(type : PleaseRunConfigurationType) : ConfigurationFactory(type) {
         override fun createTemplateConfiguration(project: Project): RunConfiguration {
-            return PleaseRunConfiguration(project, this, "//some:target", "", "", "")
+            return PleaseRunConfiguration(project, this, "//some:target", "", "", "", "")
         }
 
         override fun getId(): String {
@@ -87,16 +88,18 @@ interface PleaseRunConfigurationBase : RunConfiguration {
     var pleaseArgs : String
     var programArgs : String
     var workingDir : String
+    var tests : String
 
     fun stateFor(executor: Executor) : RunProfileState {
+        val please = Please(pleaseArgs)
         if(executor is PleaseBuildExecutor) {
-            return PleaseProfileState(target, this.project, "build", pleaseArgs, "")
+            return PleaseProfileState(this.project, please.build(target))
         }
         if(executor is PleaseTestExecutor) {
             // TODO(jpoole): we could parse the test output here and present it in a nice way with a custom console view
-            return PleaseProfileState(target, this.project, "test", pleaseArgs, programArgs)
+            return PleaseProfileState(this.project, please.test(target, tests))
         }
-        return PleaseProfileState(target, this.project, "run", pleaseArgs, programArgs)
+        return PleaseProfileState(this.project, please.run(target))
     }
 }
 
@@ -106,7 +109,8 @@ class PleaseRunConfiguration(
     override var target: String,
     override var pleaseArgs: String,
     override var programArgs: String,
-    override var workingDir: String
+    override var workingDir: String,
+    override var tests: String
 ) : LocatableConfigurationBase<RunProfileState>(project, factory, "Please"), PleaseRunConfigurationBase {
     override fun getConfigurationEditor(): SettingsEditor<out RunConfiguration> {
         return PleaseRunConfigurationSettings(false)
@@ -120,9 +124,9 @@ class PleaseRunConfiguration(
 object PreloadRunConfig : PreloadingActivity() {
     override fun preload(indicator: ProgressIndicator) {
         PleaseLineMarkerProvider.actionProducers.add { project, target -> listOf(
-            PleaseAction(project, PleaseBuildExecutor, target, "build"),
-            PleaseAction(project, PleaseTestExecutor, target, "test"),
-            PleaseAction(project, DefaultRunExecutor.getRunExecutorInstance(), target, "run")
+            PleaseAction(project, PleaseBuildExecutor, target),
+            PleaseAction(project, PleaseTestExecutor, target),
+            PleaseAction(project, DefaultRunExecutor.getRunExecutorInstance(), target)
         )}
     }
 }

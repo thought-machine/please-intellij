@@ -27,6 +27,7 @@ import com.intellij.xdebugger.XDebugProcess
 import com.intellij.xdebugger.XDebugSession
 import net.thoughtmachine.please.plugin.PLEASE_ICON
 import net.thoughtmachine.please.plugin.runconfiguration.*
+import net.thoughtmachine.please.plugin.runconfiguration.pleasecommandline.Please
 import org.apache.tools.ant.types.Commandline
 import org.jetbrains.concurrency.AsyncPromise
 import org.jetbrains.concurrency.Promise
@@ -34,10 +35,11 @@ import org.jetbrains.debugger.DebuggableRunConfiguration
 import java.net.InetSocketAddress
 import java.nio.charset.Charset
 
-class PleaseGoAction(private val project: Project, private val executor : Executor, private val target : String) :
-    AnAction({"plz run $target"}, executor.icon) {
+class PleaseGoAction(private val project: Project, private val executor : Executor, private val target : String, private val test : String) :
+    AnAction({"plz ${PleaseAction.verbForExecutor(executor)} $target"}, executor.icon) {
+
     override fun actionPerformed(e: AnActionEvent) {
-        PleaseGoRunConfiguration(project, PleaseGoRunConfigurationType.Factory(PleaseGoRunConfigurationType()), target, "", "", "")
+        PleaseGoRunConfiguration(project, PleaseGoRunConfigurationType.Factory(PleaseGoRunConfigurationType()), target, "", "", "", test)
             .executeTarget(target, executor)
     }
 }
@@ -45,7 +47,7 @@ class PleaseGoAction(private val project: Project, private val executor : Execut
 class PleaseGoRunConfigurationType : ConfigurationTypeBase("PleaseGoRunConfigurationType", "Please (Golang)", "Run a please action on a target", PLEASE_ICON) {
     class Factory(type : PleaseGoRunConfigurationType) : ConfigurationFactory(type) {
         override fun createTemplateConfiguration(project: Project): RunConfiguration {
-            return PleaseGoRunConfiguration(project, this, "//some:target", "", "", "")
+            return PleaseGoRunConfiguration(project, this, "//some:target", "", "", "", "")
         }
 
         override fun getId(): String {
@@ -64,7 +66,8 @@ class PleaseGoRunConfiguration(
     override var target: String,
     override var pleaseArgs: String,
     override var programArgs: String,
-    override var workingDir: String
+    override var workingDir: String,
+    override var tests: String
 ) :
     LocatableConfigurationBase<RunProfileState>(project, factory, "Please (Golang)"), DebuggableRunConfiguration, PleaseRunConfigurationBase {
 
@@ -74,13 +77,13 @@ class PleaseGoRunConfiguration(
 
     override fun getState(executor: Executor, environment: ExecutionEnvironment): RunProfileState {
         if (executor is DefaultDebugExecutor) {
-            return PleaseDebugState(target, pleaseArgs, programArgs, workingDir, this.project, super.computeDebugAddress(null))
+            return PleaseGoDebugState(target, pleaseArgs, programArgs, workingDir, tests, this.project, super.computeDebugAddress(null))
         }
         return stateFor(executor)
     }
 
     override fun computeDebugAddress(state: RunProfileState): InetSocketAddress {
-        return (state as PleaseDebugState).address
+        return (state as PleaseGoDebugState).address
     }
 
     override fun createDebugProcess(
@@ -99,24 +102,24 @@ class PleaseGoRunConfiguration(
     }
 }
 
-class PleaseDebugState(
+class PleaseGoDebugState(
     private var target: String,
     private var pleaseArgs : String,
     private var programArgs: String,
     private var workingDir: String,
+    private var tests: String,
     private var project: Project,
     var address: InetSocketAddress
 ) : DebuggableRunProfileState {
 
     private fun startProcess(): ProcessHandler {
-        val plzArgs = Commandline.translateCommandline(pleaseArgs)
+        val plzArgs = Commandline.translateCommandline(pleaseArgs).toList()
         val wd = if(workingDir == "") "." else workingDir
 
-        val plzCmd = listOf("plz", "exec", target,  "--config=dbg", "-p", "--verbosity=info", "--share_network") + plzArgs
-        val execCmd = listOf("dlv", "exec", "\\\$PWD/\\\$OUT", "--api-version=2", "--headless=true",
+        val execCmd = listOf("TESTS=${tests}", "dlv", "exec", "\\\$PWD/\\\$OUT", "--api-version=2", "--headless=true",
             "--listen=:${address.port}", "--wd=$wd", "--", programArgs)
 
-        val cmd = GeneralCommandLine(plzCmd + listOf("--") + execCmd)
+        val cmd = GeneralCommandLine(Please(pleaseArgs = plzArgs).exec(target, execCmd))
 
         //TODO(jpoole): this should use the files project root
         cmd.setWorkDirectory(project.basePath!!)
@@ -146,13 +149,12 @@ class PleaseDebugState(
             }
 
             override fun run(indicator: ProgressIndicator) {
-                val cmd = GeneralCommandLine(
-                    mutableListOf("plz", "--config=dbg", "build", "-p", "-v", "info") +
-                            Commandline.translateCommandline(pleaseArgs) +
-                            listOf(target)
-                )
+                val pleaseArgs = Commandline.translateCommandline(pleaseArgs).toList()
+                val cmd = GeneralCommandLine(Please(pleaseArgs = pleaseArgs).build(target))
+
                 cmd.setWorkDirectory(project.basePath!!)
                 cmd.isRedirectErrorStream = true
+
                 val process = ProcessHandlerFactoryImpl.getInstance().createColoredProcessHandler(cmd)
                 var output = ""
                 process.process.inputStream.bufferedReader(Charset.defaultCharset()).lines().forEach {
@@ -174,7 +176,7 @@ class PleaseDebugState(
 object PreloadGoRunConfig : PreloadingActivity() {
     override fun preload(indicator: ProgressIndicator) {
         PleaseLineMarkerProvider.actionProducers.add { project, target -> listOf(
-            PleaseGoAction(project, DefaultDebugExecutor.getDebugExecutorInstance(), target)
+            PleaseGoAction(project, DefaultDebugExecutor.getDebugExecutorInstance(), target, "")
         )}
     }
 }

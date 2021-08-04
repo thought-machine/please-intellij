@@ -4,6 +4,7 @@ import com.intellij.execution.Executor
 import com.intellij.execution.ProgramRunnerUtil
 import com.intellij.execution.RunManager
 import com.intellij.execution.configurations.RunConfiguration
+import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.execution.impl.RunManagerImpl
 import com.intellij.execution.impl.RunnerAndConfigurationSettingsImpl
 import com.intellij.execution.lineMarker.RunLineMarkerContributor
@@ -34,11 +35,26 @@ fun (RunConfiguration).executeTarget(target: String, executor: Executor) {
 /**
  * This is the actual action the gutter icons perform which creates and runs a please run configuration for the target.
  */
-class PleaseAction(private val project: Project, private val executor : Executor, private val target : String, plzAction:String) :
-    AnAction({"plz $plzAction $target"}, executor.icon) {
+class PleaseAction(private val project: Project, private val executor : Executor, private val target : String) :
+    AnAction({"plz ${verbForExecutor(executor)} $target"}, executor.icon) {
     override fun actionPerformed(e: AnActionEvent) {
-        PleaseRunConfiguration(project, PleaseRunConfigurationType.Factory(PleaseRunConfigurationType()), target, "", "", "")
+        PleaseRunConfiguration(project, PleaseRunConfigurationType.Factory(PleaseRunConfigurationType()), target, "", "", "", "")
             .executeTarget(target, executor)
+    }
+
+    companion object {
+        fun verbForExecutor(executor: Executor) : String {
+            if (executor == DefaultDebugExecutor.getDebugExecutorInstance()) {
+                return "debug"
+            }
+            if (executor == PleaseTestExecutor) {
+                return "test"
+            }
+            if (executor == PleaseBuildExecutor) {
+                return "build"
+            }
+            return "run"
+        }
     }
 }
 
