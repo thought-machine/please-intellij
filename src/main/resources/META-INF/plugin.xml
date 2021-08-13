@@ -27,6 +27,10 @@
         <lang.syntaxHighlighterFactory language="Please"
                                        implementationClass="com.jetbrains.python.highlighting.PySyntaxHighlighterFactory"/>
         <notificationGroup id="Please" displayType="BALLOON"/>
+        <!-- config -->
+        <projectConfigurable parentId="tools" instance="net.thoughtmachine.please.plugin.settings.PleaseProjectConfigurable"
+                             id="net.thoughtmachine.please.plugin.settings.PleaseProjectConfigurable" displayName="Please Project Settings"
+                             nonDefaultProject="true"/>
         <!-- Subincludes -->
         <completion.contributor language="Python" implementationClass="net.thoughtmachine.please.plugin.subinclude.SubincludeCompletionContributor"/>
         <localInspection language="Please" displayName="Please: Unresolved subinclude" enabledByDefault="true" level="ERROR" groupName="Please"
