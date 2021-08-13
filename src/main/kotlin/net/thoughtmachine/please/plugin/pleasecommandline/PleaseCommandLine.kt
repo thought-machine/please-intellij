@@ -1,9 +1,13 @@
-package net.thoughtmachine.please.plugin.runconfiguration.pleasecommandline
+package net.thoughtmachine.please.plugin.pleasecommandline
+
+import com.intellij.openapi.project.Project
+import net.thoughtmachine.please.plugin.settings.PleaseProjectConfigurable
 
 
 typealias PleaseCommand = List<String>
 
 class Please(
+    private val project: Project,
     private val verbosity: String = "info",
     private val plainOutput : Boolean = true,
     private val config : String = "dbg",
@@ -24,7 +28,8 @@ class Please(
     }
 
     fun args() : List<String> {
-        val args = mutableListOf("plz", "-v", verbosity, "-c", config)
+        val plz = PleaseProjectConfigurable.getPleasePath(project)
+        val args = mutableListOf(plz, "-v", verbosity, "-c", config)
         if(plainOutput) {
             args.add("-p")
         }

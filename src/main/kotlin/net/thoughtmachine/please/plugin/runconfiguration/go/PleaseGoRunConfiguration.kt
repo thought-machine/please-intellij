@@ -27,7 +27,7 @@ import com.intellij.xdebugger.XDebugProcess
 import com.intellij.xdebugger.XDebugSession
 import net.thoughtmachine.please.plugin.PLEASE_ICON
 import net.thoughtmachine.please.plugin.runconfiguration.*
-import net.thoughtmachine.please.plugin.runconfiguration.pleasecommandline.Please
+import net.thoughtmachine.please.plugin.pleasecommandline.Please
 import org.apache.tools.ant.types.Commandline
 import org.jetbrains.concurrency.AsyncPromise
 import org.jetbrains.concurrency.Promise
@@ -119,7 +119,7 @@ class PleaseGoDebugState(
         val execCmd = listOf("TESTS=${tests}", "dlv", "exec", "\\\$PWD/\\\$OUT", "--api-version=2", "--headless=true",
             "--listen=:${address.port}", "--wd=$wd", "--", programArgs)
 
-        val cmd = GeneralCommandLine(Please(pleaseArgs = plzArgs).exec(target, execCmd))
+        val cmd = GeneralCommandLine(Please(this.project, pleaseArgs = plzArgs).exec(target, execCmd))
 
         //TODO(jpoole): this should use the files project root
         cmd.setWorkDirectory(project.basePath!!)
@@ -150,7 +150,7 @@ class PleaseGoDebugState(
 
             override fun run(indicator: ProgressIndicator) {
                 val pleaseArgs = Commandline.translateCommandline(pleaseArgs).toList()
-                val cmd = GeneralCommandLine(Please(pleaseArgs = pleaseArgs).build(target))
+                val cmd = GeneralCommandLine(Please(this.project, pleaseArgs = pleaseArgs).build(target))
 
                 cmd.setWorkDirectory(project.basePath!!)
                 cmd.isRedirectErrorStream = true
