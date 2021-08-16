@@ -13,9 +13,21 @@ class Please(
     private val config : String = "dbg",
     private val pleaseArgs: List<String> = emptyList()
 ) {
+    fun version() : PleaseCommand = args() + listOf("--version")
     fun build(target: String) : PleaseCommand = args() + listOf("build", target)
-    fun run(target: String) : PleaseCommand = args() + listOf("run", target)
     fun test(target: String, tests: String) : PleaseCommand = args() + listOf("test", target, "--", tests)
+
+    fun run(target: String, inTmpDir: Boolean=false, cmd: String?=null) : PleaseCommand {
+        val args = (args() + listOf("run", target)).toMutableList()
+        if (inTmpDir) {
+            args.add("--in_tmp_dir")
+        }
+        if (cmd != null) {
+            args.addAll(listOf("--cmd", cmd))
+        }
+        return args
+    }
+
     fun exec(target: String, execCmd: List<String>, shareNetwork : Boolean = true) : PleaseCommand {
         val args = args().toMutableList()
         args.addAll(listOf("exec", target))
