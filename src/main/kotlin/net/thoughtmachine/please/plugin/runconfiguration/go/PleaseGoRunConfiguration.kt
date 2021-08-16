@@ -122,6 +122,9 @@ class PleaseGoDebugState(
                 .trim()
             return SemVer.parseFromText(output)
         }
+        val error = String(process.process.inputStream.readAllBytes())
+        Notifications.Bus.notify(Notification("Please", "Failed to determine version. Some features may not work as expected.", error, NotificationType.WARNING))
+
         return null
     }
 
