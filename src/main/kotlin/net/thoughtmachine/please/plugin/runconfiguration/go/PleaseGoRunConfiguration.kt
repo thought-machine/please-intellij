@@ -8,6 +8,7 @@ import com.intellij.execution.Executor
 import com.intellij.execution.configurations.*
 import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.execution.process.ProcessHandler
+import com.intellij.execution.process.ProcessHandlerFactory
 import com.intellij.execution.process.ProcessHandlerFactoryImpl
 import com.intellij.execution.runners.DebuggableRunProfileState
 import com.intellij.execution.runners.ExecutionEnvironment
@@ -23,11 +24,12 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
+import com.intellij.util.text.SemVer
 import com.intellij.xdebugger.XDebugProcess
 import com.intellij.xdebugger.XDebugSession
 import net.thoughtmachine.please.plugin.PLEASE_ICON
 import net.thoughtmachine.please.plugin.runconfiguration.*
-import net.thoughtmachine.please.plugin.runconfiguration.pleasecommandline.Please
+import net.thoughtmachine.please.plugin.pleasecommandline.Please
 import org.apache.tools.ant.types.Commandline
 import org.jetbrains.concurrency.AsyncPromise
 import org.jetbrains.concurrency.Promise
@@ -111,15 +113,37 @@ class PleaseGoDebugState(
     private var project: Project,
     var address: InetSocketAddress
 ) : DebuggableRunProfileState {
+    private fun getPleaseVersion() : SemVer? {
+        val cmd = GeneralCommandLine(Please(this.project).version())
+        val process = ProcessHandlerFactory.getInstance().createProcessHandler(cmd)
+        if (process.process.waitFor() == 0) {
+            val output = String(process.process.inputStream.readAllBytes())
+                .removePrefix("Please version ")
+                .trim()
+            return SemVer.parseFromText(output)
+        }
+        val error = String(process.process.inputStream.readAllBytes())
+        Notifications.Bus.notify(Notification("Please", "Failed to determine version. Some features may not work as expected.", error, NotificationType.WARNING))
 
-    private fun startProcess(): ProcessHandler {
+        return null
+    }
+
+    private fun startProcess() : ProcessHandler {
+        val version = getPleaseVersion()
+        val shouldExec = version != null && (version.major > 16 || version.major == 16 && version.minor >= 4)
+
         val plzArgs = Commandline.translateCommandline(pleaseArgs).toList()
         val wd = if(workingDir == "") "." else workingDir
 
-        val execCmd = listOf("TESTS=${tests}", "dlv", "exec", "\\\$PWD/\\\$OUT", "--api-version=2", "--headless=true",
+        val dlvCmd = listOf("TESTS=${tests}", "dlv", "exec", "\\\$PWD/\\\$OUT", "--api-version=2", "--headless=true",
             "--listen=:${address.port}", "--wd=$wd", "--", programArgs)
 
-        val cmd = GeneralCommandLine(Please(pleaseArgs = plzArgs).exec(target, execCmd))
+        val cmd = if (shouldExec) {
+            GeneralCommandLine(Please(this.project, pleaseArgs = plzArgs).exec(target, dlvCmd))
+        } else {
+            val runCmd = dlvCmd.joinToString(" ")
+            GeneralCommandLine(Please(this.project, pleaseArgs = plzArgs).run(target, inTmpDir = true, cmd = runCmd))
+        }
 
         //TODO(jpoole): this should use the files project root
         cmd.setWorkDirectory(project.basePath!!)
@@ -150,7 +174,7 @@ class PleaseGoDebugState(
 
             override fun run(indicator: ProgressIndicator) {
                 val pleaseArgs = Commandline.translateCommandline(pleaseArgs).toList()
-                val cmd = GeneralCommandLine(Please(pleaseArgs = pleaseArgs).build(target))
+                val cmd = GeneralCommandLine(Please(this.project, pleaseArgs = pleaseArgs).build(target))
 
                 cmd.setWorkDirectory(project.basePath!!)
                 cmd.isRedirectErrorStream = true

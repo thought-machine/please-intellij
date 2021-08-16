@@ -9,7 +9,8 @@ import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
 import net.thoughtmachine.please.plugin.PLEASE_ICON
-import net.thoughtmachine.please.plugin.runconfiguration.pleasecommandline.Please
+import net.thoughtmachine.please.plugin.pleasecommandline.Please
+import org.apache.tools.ant.types.Commandline
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import javax.swing.JComponent
@@ -91,7 +92,7 @@ interface PleaseRunConfigurationBase : RunConfiguration {
     var tests : String
 
     fun stateFor(executor: Executor) : RunProfileState {
-        val please = Please(pleaseArgs)
+        val please = Please(this.project, pleaseArgs=Commandline.translateCommandline(pleaseArgs).toList())
         if(executor is PleaseBuildExecutor) {
             return PleaseProfileState(this.project, please.build(target))
         }
