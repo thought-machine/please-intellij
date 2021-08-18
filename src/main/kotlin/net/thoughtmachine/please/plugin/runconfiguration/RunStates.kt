@@ -26,12 +26,6 @@ object PleaseBuildExecutor : DefaultRunExecutor() {
     }
 }
 
-object PleaseTestExecutor : DefaultRunExecutor() {
-    override fun getStartActionText(): String {
-        return "Test"
-    }
-}
-
 fun (Project).createConsole(processHandler: ProcessHandler): ConsoleView {
     val console = TextConsoleBuilderFactory.getInstance().createBuilder(this).console
     console.attachToProcess(processHandler)

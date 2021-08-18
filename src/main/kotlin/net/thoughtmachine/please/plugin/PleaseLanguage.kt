@@ -29,6 +29,10 @@ object PleaseBuildFileType : PleaseFileType() {
     override fun getDefaultExtension() = ".plz"
 
     override fun getDescription() = "Please BUILD file"
+
+    override fun getDisplayName(): String {
+        return "PleaseBuild"
+    }
 }
 
 object PleaseBuildDefFileType : PleaseFileType() {
@@ -39,6 +43,10 @@ object PleaseBuildDefFileType : PleaseFileType() {
     override fun getDefaultExtension() = ".build_defs"
 
     override fun getDescription() = "Please build definition file"
+
+    override fun getDisplayName(): String {
+        return "PleaseDefs"
+    }
 }
 
 class PleaseFile(viewProvider: FileViewProvider, private var type : PleaseFileType) : PyFileImpl(viewProvider, PleaseLanguage) {

@@ -12,7 +12,6 @@ import com.intellij.openapi.vfs.newvfs.events.VFileDeleteEvent
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent
 import com.intellij.openapi.vfs.newvfs.events.VFileMoveEvent
 import com.jetbrains.rd.util.concurrentMapOf
-import com.jetbrains.rd.util.first
 import net.thoughtmachine.please.plugin.PleaseFile
 import org.apache.commons.io.FileUtils
 import java.io.File
