@@ -27,7 +27,7 @@ interface PleaseRunConfigurationBase : DebuggableRunConfiguration {
     /**
      * Returns the active PleaseTargetRunStateProvider that the configuration has selected.
      */
-    fun getActiveRunStateProvider() : PleaseTargetRunStateProvider
+    fun getActiveRunStateProvider() : PleaseDebugRunStateProvider
 
     fun target() :String
     fun pleaseArgs(): String
@@ -56,17 +56,17 @@ interface PleaseRunConfigurationBase : DebuggableRunConfiguration {
     /**
      * Returns a list of PleaseTargetRunStateProvider that are applicable to this run configuration
      */
-    fun getDebugRunStateProviders() : List<PleaseTargetRunStateProvider> {
+    fun getDebugRunStateProviders() : List<PleaseDebugRunStateProvider> {
         return runStateProviderEP.extensionList
             .filter { it.canRun(this) }
     }
 
     companion object {
-        private val runStateProviderEP = ExtensionPointName.create<PleaseTargetRunStateProvider>("net.thoughtmachine.please.plugin.pleaseTargetRunStateProvider")
+        private val runStateProviderEP = ExtensionPointName.create<PleaseDebugRunStateProvider>("net.thoughtmachine.please.plugin.pleaseDebugRunStateProvider")
     }
 }
 
-interface PleaseTargetRunStateProvider {
+interface PleaseDebugRunStateProvider {
 
     /**
      * Whether this can provide a DebuggableRunProfileState for the given run configuration

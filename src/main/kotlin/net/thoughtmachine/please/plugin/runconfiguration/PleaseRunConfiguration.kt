@@ -79,13 +79,13 @@ class PleaseRunConfiguration(
     var args: PleaseRunConfigArgs
 ) : LocatableConfigurationBase<RunProfileState>(project, factory, "plz run"), PleaseRunConfigurationBase {
     // TODO(jpoole): Don't just assume we want to use the first one (configurable? What happens when there's none?)
-    var runStateProvider : PleaseTargetRunStateProvider? = null
+    var runStateProvider : PleaseDebugRunStateProvider? = null
 
     override fun getConfigurationEditor(): SettingsEditor<out RunConfiguration> {
         return PleaseRunConfigurationSettings()
     }
 
-    override fun getActiveRunStateProvider(): PleaseTargetRunStateProvider {
+    override fun getActiveRunStateProvider(): PleaseDebugRunStateProvider {
         if (runStateProvider == null) {
             runStateProvider = getDebugRunStateProviders().first()
         }

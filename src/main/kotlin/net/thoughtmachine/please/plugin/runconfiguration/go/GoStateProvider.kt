@@ -29,7 +29,7 @@ import java.net.InetSocketAddress
 import java.nio.charset.Charset
 
 
-object GoStateProvider : PleaseTargetRunStateProvider {
+object GoStateProvider : PleaseDebugRunStateProvider {
     override fun canRun(config: PleaseRunConfigurationBase): Boolean {
         return true
     }
