@@ -17,13 +17,22 @@ class Please(
     fun build(target: String) : PleaseCommand = args() + listOf("build", target)
     fun test(target: String, tests: String) : PleaseCommand = args() + listOf("test", target, "--", tests)
 
-    fun run(target: String, inTmpDir: Boolean=false, cmd: String?=null) : PleaseCommand {
+    fun run(
+        target: String,
+        inTmpDir: Boolean = false,
+        cmd: List<String> = emptyList(),
+        programArgs: List<String> = emptyList()
+    ) : PleaseCommand {
         val args = (args() + listOf("run", target)).toMutableList()
         if (inTmpDir) {
             args.add("--in_tmp_dir")
         }
-        if (cmd != null) {
-            args.addAll(listOf("--cmd", cmd))
+        if (cmd.isNotEmpty()) {
+            args.addAll(listOf("--cmd", cmd.joinToString(" ")))
+        }
+        if (programArgs.isNotEmpty()) {
+            args.add("--")
+            args.addAll(programArgs)
         }
         return args
     }

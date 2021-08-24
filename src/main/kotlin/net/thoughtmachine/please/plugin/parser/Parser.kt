@@ -18,7 +18,7 @@ class PleaseParserDefinition : PythonParserDefinition() {
         return FILE
     }
 
-    override fun createFile(viewProvider: FileViewProvider): PsiFile {
+    override fun createFile(viewProvider: FileViewProvider): PleaseFile {
         return PleaseFile(viewProvider, viewProvider.fileType as PleaseFileType)
     }
 }
