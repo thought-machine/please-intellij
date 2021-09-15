@@ -71,6 +71,10 @@
     </extensionPoints>
 
     <change-notes><![CDATA[
+        <h2>v2.0.0</h2>
+        <p>A few QoL features, performance improvements, and bug fixes
+        <p>Added run line markers to Go sources to run and debug tests
+        <p>Major refactor of run configurations to make way for debugging other languages
         <h2>v1.3.0</h2>
         <p>Made run configurations work without having Go installed for build, run and test.
         <p>Made subincludes resolve to the file in the source tree rather than plz-out/gen when they're identical files
