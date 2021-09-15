@@ -71,6 +71,8 @@
     </extensionPoints>
 
     <change-notes><![CDATA[
+        <h2>v2.0.1</h2>
+        <p>Fix class not found when resolving references
         <h2>v2.0.0</h2>
         <p>A few QoL features, performance improvements, and bug fixes
         <p>Added run line markers to Go sources to run and debug tests
