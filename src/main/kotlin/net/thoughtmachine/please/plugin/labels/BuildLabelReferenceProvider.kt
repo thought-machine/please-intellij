@@ -90,8 +90,8 @@ fun findBuildFile(project: Project, projectRoot : Path, pkgName : String) : Plea
 
 class BuildLabelSymbolReference(private val label: PyStringLiteralExpression, private val pyCallSymbol: Symbol) :
     PsiSymbolReference {
-    override fun resolveReference(): MutableCollection<out SymbolResolveResult> {
-        return mutableListOf(SymbolResolveResult { pyCallSymbol })
+    override fun resolveReference(): MutableCollection<out Symbol> {
+        return mutableListOf(pyCallSymbol)
     }
 
     override fun getElement(): PsiElement {
