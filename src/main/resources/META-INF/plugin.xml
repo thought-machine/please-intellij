@@ -27,6 +27,10 @@
         <lang.syntaxHighlighterFactory language="Please"
                                        implementationClass="com.jetbrains.python.highlighting.PySyntaxHighlighterFactory"/>
         <notificationGroup id="Please" displayType="BALLOON"/>
+        <!-- config -->
+        <projectConfigurable parentId="tools" instance="net.thoughtmachine.please.plugin.settings.PleaseProjectConfigurable"
+                             id="net.thoughtmachine.please.plugin.settings.PleaseProjectConfigurable" displayName="Please Project Settings"
+                             nonDefaultProject="true"/>
         <!-- Subincludes -->
         <completion.contributor language="Python" implementationClass="net.thoughtmachine.please.plugin.subinclude.SubincludeCompletionContributor"/>
         <localInspection language="Please" displayName="Please: Unresolved subinclude" enabledByDefault="true" level="ERROR" groupName="Please"
@@ -41,12 +45,12 @@
                                      targetClass="com.intellij.model.psi.impl.Psi2Symbol"/>
         <!-- adds a build icon to the run configs -->
         <profiler.executor implementation="net.thoughtmachine.please.plugin.runconfiguration.PleaseBuildExecutor"/>
-        <profiler.executor implementation="net.thoughtmachine.please.plugin.runconfiguration.PleaseTestExecutor"/>
         <!-- Run configurations -->
         <runLineMarkerContributor  language="Python"
                                    implementationClass="net.thoughtmachine.please.plugin.runconfiguration.PleaseLineMarkerProvider"/>
         <configurationType implementation="net.thoughtmachine.please.plugin.runconfiguration.PleaseRunConfigurationType"/>
-        <preloadingActivity implementation="net.thoughtmachine.please.plugin.runconfiguration.PreloadRunConfig"/>
+        <configurationType implementation="net.thoughtmachine.please.plugin.runconfiguration.PleaseTestConfigurationType"/>
+        <configurationType implementation="net.thoughtmachine.please.plugin.runconfiguration.PleaseBuildConfigurationType"/>
     </extensions>
 
     <extensions defaultExtensionNs="Pythonid">
@@ -61,7 +65,16 @@
         <!-- TODO(jpoole): preloaded build defs and subincludes -->
     </extensions>
 
+    <extensionPoints>
+        <extensionPoint name="pleaseDebugRunStateProvider"
+                        interface="net.thoughtmachine.please.plugin.runconfiguration.PleaseDebugRunStateProvider"/>
+    </extensionPoints>
+
     <change-notes><![CDATA[
+        <h2>v2.0.0</h2>
+        <p>A few QoL features, performance improvements, and bug fixes
+        <p>Added run line markers to Go sources to run and debug tests
+        <p>Major refactor of run configurations to make way for debugging other languages
         <h2>v1.3.0</h2>
         <p>Made run configurations work without having Go installed for build, run and test.
         <p>Made subincludes resolve to the file in the source tree rather than plz-out/gen when they're identical files

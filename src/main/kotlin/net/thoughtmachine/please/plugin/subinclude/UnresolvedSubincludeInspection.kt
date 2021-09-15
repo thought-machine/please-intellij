@@ -17,7 +17,7 @@ import com.jetbrains.python.psi.PyElementVisitor
 import com.jetbrains.python.psi.PyStringLiteralExpression
 import net.thoughtmachine.please.plugin.PleaseFile
 
-class UnresolvedSubincludeInspection : LocalInspectionTool() {
+object UnresolvedSubincludeInspection : LocalInspectionTool() {
     override fun buildVisitor(
         holder: ProblemsHolder,
         isOnTheFly: Boolean,

@@ -32,8 +32,7 @@ class SubincludeCompletionProvider : CompletionProvider<CompletionParameters>(){
         return file.getSubincludes().asSequence()
             .map { PleaseSubincludeManager.resolvedSubincludes[it] }.filterNotNull().flatten()
             .map(PsiManager.getInstance(parameters.editor.project!!)::findFile)
-            .map { it.castSafelyTo<PyFile>() }
-            .filterNotNull()
+            .map { it.castSafelyTo<PyFile>() }.filterNotNull()
             .flatMap { it.iterateNames().asSequence() }
             .map { it.name }.filterNotNull()
             .filter { it.startsWith(text) }

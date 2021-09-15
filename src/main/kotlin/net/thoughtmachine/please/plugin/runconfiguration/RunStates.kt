@@ -13,7 +13,7 @@ import com.intellij.execution.runners.ProgramRunner
 import com.intellij.execution.ui.ConsoleView
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.project.Project
-import net.thoughtmachine.please.plugin.runconfiguration.pleasecommandline.PleaseCommand
+import net.thoughtmachine.please.plugin.pleasecommandline.PleaseCommand
 import javax.swing.Icon
 
 object PleaseBuildExecutor : DefaultRunExecutor() {
@@ -23,12 +23,6 @@ object PleaseBuildExecutor : DefaultRunExecutor() {
 
     override fun getStartActionText(): String {
         return "Build"
-    }
-}
-
-object PleaseTestExecutor : DefaultRunExecutor() {
-    override fun getStartActionText(): String {
-        return "Test"
     }
 }
 

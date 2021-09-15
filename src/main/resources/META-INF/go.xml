@@ -1,8 +1,9 @@
 <idea-plugin>
     <extensions defaultExtensionNs="com.intellij">
-        <configurationType implementation="net.thoughtmachine.please.plugin.runconfiguration.go.PleaseGoRunConfigurationType"/>
-        <preloadingActivity implementation="net.thoughtmachine.please.plugin.runconfiguration.go.PreloadGoRunConfig"/>
         <runLineMarkerContributor  language="go"
                                    implementationClass="net.thoughtmachine.please.plugin.runconfiguration.go.PleaseGoLineMarkerProvider"/>
+    </extensions>
+    <extensions defaultExtensionNs="net.thoughtmachine.please.plugin">
+        <pleaseDebugRunStateProvider implementation="net.thoughtmachine.please.plugin.runconfiguration.go.GoStateProvider"/>
     </extensions>
 </idea-plugin>

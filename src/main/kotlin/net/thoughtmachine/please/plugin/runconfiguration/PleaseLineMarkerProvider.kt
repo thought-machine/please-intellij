@@ -1,20 +1,12 @@
 package net.thoughtmachine.please.plugin.runconfiguration
 
-import com.intellij.execution.Executor
-import com.intellij.execution.ProgramRunnerUtil
-import com.intellij.execution.RunManager
-import com.intellij.execution.configurations.RunConfiguration
 import com.intellij.execution.executors.DefaultDebugExecutor
-import com.intellij.execution.impl.RunManagerImpl
-import com.intellij.execution.impl.RunnerAndConfigurationSettingsImpl
+import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.execution.lineMarker.RunLineMarkerContributor
 import com.intellij.icons.AllIcons
-import com.intellij.openapi.actionSystem.AnAction
-import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
 import com.intellij.psi.impl.source.tree.LeafPsiElement
-import com.intellij.util.Function
 import com.jetbrains.python.PyTokenTypes
 import com.jetbrains.python.psi.PyCallExpression
 import com.jetbrains.python.psi.PyStringLiteralExpression
@@ -22,47 +14,10 @@ import net.thoughtmachine.please.plugin.PleaseBuildFileType
 import net.thoughtmachine.please.plugin.PleaseFile
 
 
-fun (RunConfiguration).executeTarget(target: String, executor: Executor) {
-    val mgr = RunManager.getInstance(project) as RunManagerImpl
-    name = "plz run $target"
-    val config = RunnerAndConfigurationSettingsImpl(mgr, this)
-
-    mgr.addConfiguration(config)
-
-    ProgramRunnerUtil.executeConfiguration(config, executor)
-}
-
-/**
- * This is the actual action the gutter icons perform which creates and runs a please run configuration for the target.
- */
-class PleaseAction(private val project: Project, private val executor : Executor, private val target : String) :
-    AnAction({"plz ${verbForExecutor(executor)} $target"}, executor.icon) {
-    override fun actionPerformed(e: AnActionEvent) {
-        PleaseRunConfiguration(project, PleaseRunConfigurationType.Factory(PleaseRunConfigurationType()), target, "", "", "", "")
-            .executeTarget(target, executor)
-    }
-
-    companion object {
-        fun verbForExecutor(executor: Executor) : String {
-            if (executor == DefaultDebugExecutor.getDebugExecutorInstance()) {
-                return "debug"
-            }
-            if (executor == PleaseTestExecutor) {
-                return "test"
-            }
-            if (executor == PleaseBuildExecutor) {
-                return "build"
-            }
-            return "run"
-        }
-    }
-}
-
 /**
  * Provides gutter icons against build rules in BUILD files
  */
 object PleaseLineMarkerProvider : RunLineMarkerContributor() {
-    val actionProducers = mutableListOf<(Project, String) -> Collection<AnAction>>()
 
     // getInfo needs to apply the run info to the LeafPsiElement as that's what intellij demands. It looks for the
     // IDENT of the function call and applies the run actions to that.
@@ -99,12 +54,35 @@ object PleaseLineMarkerProvider : RunLineMarkerContributor() {
                 val target = "//${file.getPleasePackage()}:${expr.stringValue}"
                 return Info(
                     AllIcons.Actions.Execute,
-                    Function { "run $target" },
-                    *actionProducers.flatMap { it(element.project, target) }.toTypedArray()
+                    { "run $target" },
+                    PleaseAction(element.project, target, "run", DefaultRunExecutor.getRunExecutorInstance(), newRunConfig(element.project, target)),
+                    PleaseAction(element.project, target, "run", DefaultDebugExecutor.getDebugExecutorInstance(), newRunConfig(element.project, target)),
+                    PleaseAction(element.project, target, "test", DefaultRunExecutor.getRunExecutorInstance(), newTestConfig(element.project, target)),
+                    PleaseAction(element.project, target, "test", DefaultDebugExecutor.getDebugExecutorInstance(), newTestConfig(element.project, target)),
+                    PleaseAction(element.project, target, "build", PleaseBuildExecutor, newBuildConfig(element.project, target))
                 )
             }
         }
 
         return null
     }
+
+    private fun newRunConfig(project: Project, target: String) = PleaseRunConfiguration(
+        project,
+        PleaseRunConfigurationType.Factory(PleaseRunConfigurationType()),
+        PleaseRunConfigArgs(target)
+    )
+
+    private fun newBuildConfig(project: Project, target: String) = PleaseBuildConfiguration(
+        project,
+        PleaseBuildConfigurationType.Factory(PleaseBuildConfigurationType()),
+        PleaseBuildConfigArgs(target)
+    )
+
+    fun newTestConfig(project: Project, target: String, tests: String = "") = PleaseTestConfiguration(
+        project,
+        PleaseTestConfigurationType.Factory(PleaseTestConfigurationType()),
+        PleaseTestConfigArgs(target, tests=tests)
+    )
+
 }
