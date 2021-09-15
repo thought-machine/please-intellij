@@ -3,7 +3,6 @@
 package net.thoughtmachine.please.plugin.labels
 
 import com.intellij.model.Symbol
-import com.intellij.model.SymbolResolveResult
 import com.intellij.model.psi.*
 import com.intellij.model.search.SearchRequest
 import com.intellij.openapi.project.Project
