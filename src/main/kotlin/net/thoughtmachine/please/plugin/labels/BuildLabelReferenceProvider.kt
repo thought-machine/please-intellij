@@ -3,7 +3,6 @@
 package net.thoughtmachine.please.plugin.labels
 
 import com.intellij.model.Symbol
-import com.intellij.model.SymbolResolveResult
 import com.intellij.model.psi.*
 import com.intellij.model.search.SearchRequest
 import com.intellij.openapi.project.Project
@@ -90,8 +89,8 @@ fun findBuildFile(project: Project, projectRoot : Path, pkgName : String) : Plea
 
 class BuildLabelSymbolReference(private val label: PyStringLiteralExpression, private val pyCallSymbol: Symbol) :
     PsiSymbolReference {
-    override fun resolveReference(): MutableCollection<out SymbolResolveResult> {
-        return mutableListOf(SymbolResolveResult { pyCallSymbol })
+    override fun resolveReference(): MutableCollection<out Symbol> {
+        return mutableListOf(pyCallSymbol)
     }
 
     override fun getElement(): PsiElement {

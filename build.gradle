@@ -5,7 +5,7 @@ plugins {
 }
 
 group 'net.thoughtmachine.please'
-version 'v2.0.0'
+version 'v2.0.1'
 
 repositories {
     mavenCentral()
@@ -18,8 +18,8 @@ dependencies {
 }
 
 intellij {
-    version 'IU-2021.1.1'
-    setPlugins("Pythonid:211.7142.45", 'org.jetbrains.plugins.go:211.7142.36')
+    version 'IU-2021.2.2'
+    setPlugins("Pythonid:212.5284.44", 'org.jetbrains.plugins.go:212.5284.31')
     updateSinceUntilBuild false
 }
 
