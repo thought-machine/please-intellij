@@ -30,7 +30,7 @@ object SubincludeReferenceResolveProvider : PyReferenceResolveProvider {
             .map { PleaseSubincludeManager.resolvedSubincludes[it]?.asSequence() }
             .filterNotNull().flatten()
             .map(PsiManager.getInstance(file.project)::findFile).filterNotNull()
-            .map { it.castSafelyTo<PyFile>()!!.findExportedName(name) }.filterNotNull()
+            .map { it.castSafelyTo<PyFile>()?.findExportedName(name) }.filterNotNull()
             .toList()
     }
 }
