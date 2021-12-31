@@ -57,7 +57,6 @@ object PleaseGoLineMarkerProvider : RunLineMarkerContributor() {
                 if (!GoTestifySupport.isRunnableTestifyMethod(parent)) {
                     return null
                 }
-
                 val receiverType = GoPsiImplUtil.unwrapPointerIfNeeded(parent.receiverType) ?: return null
 
                 val subTestName = findSuiteTestName(element.containingFile as GoFile, (receiverType.resolve(parent) as GoTypeSpec).name!!)
