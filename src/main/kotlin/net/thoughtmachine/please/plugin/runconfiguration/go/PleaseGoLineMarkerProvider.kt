@@ -54,11 +54,9 @@ object PleaseGoLineMarkerProvider : RunLineMarkerContributor() {
                 test = parent.name ?: ""
             }
             is GoMethodDeclaration -> {
-                System.out.println("found go method")
                 if (!GoTestifySupport.isRunnableTestifyMethod(parent)) {
                     return null
                 }
-                System.out.println("found go method asd")
 
                 val receiverType = GoPsiImplUtil.unwrapPointerIfNeeded(parent.receiverType) ?: return null
 
