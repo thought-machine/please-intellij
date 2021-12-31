@@ -8,7 +8,7 @@ typealias PleaseCommand = List<String>
 
 class Please(
     private val project: Project,
-    private val verbosity: String = "info",
+    private val verbosity: String = "warning",
     private val plainOutput : Boolean = true,
     private val config : String = "dbg",
     private val pleaseArgs: List<String> = emptyList()
@@ -45,6 +45,12 @@ class Please(
         }
         args.add("--")
         args.addAll(execCmd)
+        return args
+    }
+
+    fun query(subcommand: String, arguments: Array<String>) : PleaseCommand {
+        val args = args().toMutableList()
+        args.addAll(listOf("query", subcommand, *arguments))
         return args
     }
 

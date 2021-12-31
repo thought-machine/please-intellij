@@ -21,6 +21,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.impl.source.tree.LeafPsiElement
+import net.thoughtmachine.please.plugin.pleasecommandline.Please
 import net.thoughtmachine.please.plugin.runconfiguration.PleaseAction
 import net.thoughtmachine.please.plugin.runconfiguration.PleaseLineMarkerProvider
 
@@ -53,9 +54,12 @@ object PleaseGoLineMarkerProvider : RunLineMarkerContributor() {
                 test = parent.name ?: ""
             }
             is GoMethodDeclaration -> {
+                System.out.println("found go method")
                 if (!GoTestifySupport.isRunnableTestifyMethod(parent)) {
                     return null
                 }
+                System.out.println("found go method asd")
+
                 val receiverType = GoPsiImplUtil.unwrapPointerIfNeeded(parent.receiverType) ?: return null
 
                 val subTestName = findSuiteTestName(element.containingFile as GoFile, (receiverType.resolve(parent) as GoTypeSpec).name!!)
@@ -118,7 +122,7 @@ object PleaseGoLineMarkerProvider : RunLineMarkerContributor() {
         val pleaseRoot = findPleaseRoot(file.virtualFile) ?: return null
         val path = pleaseRoot.toNioPath().relativize(file.virtualFile.toNioPath())
 
-        val cmd = GeneralCommandLine("plz query whatinputs $path".split(" "))
+        val cmd = GeneralCommandLine(Please(file.project).query("whatinputs", arrayOf(path.toString())))
         cmd.workDirectory = file.project.guessProjectDir()!!.toNioPath().toFile()
         cmd.withRedirectErrorStream(true)
 

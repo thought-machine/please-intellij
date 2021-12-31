@@ -4,6 +4,7 @@ import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.execution.lineMarker.RunLineMarkerContributor
 import com.intellij.icons.AllIcons
+import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
 import com.intellij.psi.impl.source.tree.LeafPsiElement
@@ -54,17 +55,35 @@ object PleaseLineMarkerProvider : RunLineMarkerContributor() {
                 val target = "//${file.getPleasePackage()}:${expr.stringValue}"
                 return Info(
                     AllIcons.Actions.Execute,
-                    { "run $target" },
-                    PleaseAction(element.project, target, "run", DefaultRunExecutor.getRunExecutorInstance(), newRunConfig(element.project, target)),
-                    PleaseAction(element.project, target, "run", DefaultDebugExecutor.getDebugExecutorInstance(), newRunConfig(element.project, target)),
-                    PleaseAction(element.project, target, "test", DefaultRunExecutor.getRunExecutorInstance(), newTestConfig(element.project, target)),
-                    PleaseAction(element.project, target, "test", DefaultDebugExecutor.getDebugExecutorInstance(), newTestConfig(element.project, target)),
-                    PleaseAction(element.project, target, "build", PleaseBuildExecutor, newBuildConfig(element.project, target))
-                )
+                    filterGoActions(element, target).toTypedArray(),
+                ) { "run $target" }
             }
         }
 
         return null
+    }
+
+    private fun filterGoActions(element: PsiElement, target: String): List<AnAction> {
+        val actions = mutableListOf(PleaseAction(element.project, target, "build",
+            PleaseBuildExecutor, newBuildConfig(element.project, target)))
+
+        // TODO(jscott) we should find a way of making this more generic for other languages
+        if (element.text == "go_binary") {
+            actions.addAll(listOf(
+                PleaseAction(element.project, target, "run",
+                    DefaultRunExecutor.getRunExecutorInstance(), newRunConfig(element.project, target)),
+                PleaseAction(element.project, target, "run",
+                    DefaultDebugExecutor.getDebugExecutorInstance(), newRunConfig(element.project, target)),
+            ))
+        } else if (element.text == "go_test") {
+            actions.addAll(listOf(
+                PleaseAction(element.project, target, "test",
+                    DefaultRunExecutor.getRunExecutorInstance(), newTestConfig(element.project, target)),
+                PleaseAction(element.project, target, "test",
+                    DefaultDebugExecutor.getDebugExecutorInstance(), newTestConfig(element.project, target)),
+            ))
+        }
+        return actions
     }
 
     private fun newRunConfig(project: Project, target: String) = PleaseRunConfiguration(

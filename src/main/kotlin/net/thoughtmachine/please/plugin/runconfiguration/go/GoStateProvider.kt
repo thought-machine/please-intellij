@@ -139,8 +139,8 @@ class PleaseGoDebugState(
             }
 
             override fun onThrowable(error: Throwable) {
-                Notifications.Bus.notify(Notification("Please", "Failed build ${config.target()}", error.message!!, NotificationType.ERROR))
-                promise.setResult(null)
+                Notifications.Bus.notify(Notification("Please", "Failed build ${config.target()}", "", NotificationType.ERROR))
+                promise.setResult(execute())
             }
 
             override fun run(indicator: ProgressIndicator) {
