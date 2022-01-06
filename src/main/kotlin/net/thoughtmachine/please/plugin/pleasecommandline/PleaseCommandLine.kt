@@ -8,8 +8,7 @@ typealias PleaseCommand = List<String>
 
 class Please(
     private val project: Project,
-    private val verbosity: String = "warning",
-    private val plainOutput : Boolean = true,
+    private val plainOutput : Boolean = false,
     private val config : String = "dbg",
     private val pleaseArgs: List<String> = emptyList()
 ) {
@@ -56,9 +55,9 @@ class Please(
 
     fun args() : List<String> {
         val plz = PleaseProjectConfigurable.getPleasePath(project)
-        val args = mutableListOf(plz, "-v", verbosity, "-c", config)
+        val args = mutableListOf(plz, "-c", config)
         if(plainOutput) {
-            args.add("-p")
+            args.addAll(listOf("-p", "-v", "warning"))
         }
         args.addAll(pleaseArgs)
         return args
