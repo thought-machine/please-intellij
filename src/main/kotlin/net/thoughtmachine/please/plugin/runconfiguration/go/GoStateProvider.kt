@@ -6,6 +6,7 @@ import com.intellij.execution.DefaultExecutionResult
 import com.intellij.execution.ExecutionResult
 import com.intellij.execution.Executor
 import com.intellij.execution.configurations.GeneralCommandLine
+import com.intellij.execution.configurations.PtyCommandLine
 import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessHandlerFactory
 import com.intellij.execution.process.ProcessHandlerFactoryImpl
@@ -62,7 +63,7 @@ class PleaseGoDebugState(
 
     private fun getPleaseVersion() : SemVer? {
         val cmd = GeneralCommandLine(Please(config.project).version())
-        val process = ProcessHandlerFactory.getInstance().createProcessHandler(cmd)
+        val process = PleaseProcessHandler(cmd)
         if (process.process.waitFor() == 0) {
             val output = String(process.process.inputStream.readAllBytes())
                 .removePrefix("Please version ")
@@ -86,7 +87,7 @@ class PleaseGoDebugState(
         ))
         //TODO(jpoole): this should use the files project root
         cmd.setWorkDirectory(config.project.basePath!!)
-        return ProcessHandlerFactoryImpl.getInstance().createColoredProcessHandler(cmd)
+        return PleaseProcessHandler(cmd)
     }
 
     private fun startForPleaseTest(config: PleaseTestConfiguration): ProcessHandler {
@@ -110,7 +111,7 @@ class PleaseGoDebugState(
 
         //TODO(jpoole): this should use the files project root
         cmd.setWorkDirectory(config.project.basePath!!)
-        return ProcessHandlerFactoryImpl.getInstance().createColoredProcessHandler(cmd)
+        return PleaseProcessHandler(cmd)
     }
 
     private fun startProcess() : ProcessHandler {

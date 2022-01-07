@@ -6,15 +6,19 @@ import com.intellij.execution.Executor
 import com.intellij.execution.configurations.PtyCommandLine
 import com.intellij.execution.configurations.RunProfileState
 import com.intellij.execution.executors.DefaultRunExecutor
-import com.intellij.execution.filters.TextConsoleBuilderFactory
+import com.intellij.execution.impl.ConsoleViewImpl
+import com.intellij.execution.process.KillableProcessHandler
 import com.intellij.execution.process.ProcessHandler
-import com.intellij.execution.process.ProcessHandlerFactoryImpl
 import com.intellij.execution.runners.ProgramRunner
 import com.intellij.execution.ui.ConsoleView
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.project.Project
+import com.intellij.terminal.TerminalExecutionConsole
+import com.intellij.util.io.BaseDataReader.SleepingPolicy
+import com.intellij.util.io.BaseOutputReader
 import net.thoughtmachine.please.plugin.pleasecommandline.PleaseCommand
 import javax.swing.Icon
+
 
 object PleaseBuildExecutor : DefaultRunExecutor() {
     override fun getIcon(): Icon {
@@ -27,7 +31,8 @@ object PleaseBuildExecutor : DefaultRunExecutor() {
 }
 
 fun (Project).createConsole(processHandler: ProcessHandler): ConsoleView {
-    val console = TextConsoleBuilderFactory.getInstance().createBuilder(this).console
+    val console = TerminalExecutionConsole(this, processHandler)
+
     console.attachToProcess(processHandler)
     return console
 }
@@ -39,7 +44,8 @@ class PleaseProfileState(
     private fun startProcess(): ProcessHandler {
         val cmd = PtyCommandLine(pleaseCommand)
         cmd.setWorkDirectory(project.basePath!!)
-        return ProcessHandlerFactoryImpl.getInstance().createColoredProcessHandler(cmd)
+
+        return PleaseProcessHandler(cmd)
     }
 
     override fun execute(executor: Executor?, runner: ProgramRunner<*>): ExecutionResult {

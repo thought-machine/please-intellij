@@ -32,3 +32,7 @@ compileTestKotlin {
 }
 
 sourceSets["main"].java.srcDirs("src/main/gen")
+
+runIde {
+    jvmArgs '-Xmx4G'
+}
