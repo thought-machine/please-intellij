@@ -51,6 +51,8 @@
         <configurationType implementation="net.thoughtmachine.please.plugin.runconfiguration.PleaseRunConfigurationType"/>
         <configurationType implementation="net.thoughtmachine.please.plugin.runconfiguration.PleaseTestConfigurationType"/>
         <configurationType implementation="net.thoughtmachine.please.plugin.runconfiguration.PleaseBuildConfigurationType"/>
+        <!-- Indexes -->
+        <fileBasedIndex implementation="net.thoughtmachine.please.plugin.graph.PackageIndexExtension" />
     </extensions>
 
     <extensions defaultExtensionNs="Pythonid">

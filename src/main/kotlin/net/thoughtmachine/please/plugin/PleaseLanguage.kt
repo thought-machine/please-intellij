@@ -3,8 +3,12 @@ package net.thoughtmachine.please.plugin
 import com.intellij.lang.Language
 import com.intellij.openapi.fileTypes.FileType
 import com.intellij.openapi.fileTypes.LanguageFileType
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.IconLoader
+import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.psi.FileViewProvider
+import com.intellij.psi.PsiElement
+import com.intellij.psi.util.PsiUtilCore
 import com.intellij.util.castSafelyTo
 import com.jetbrains.python.inspections.PyInspectionExtension
 import com.jetbrains.python.psi.PyCallExpression
@@ -13,6 +17,7 @@ import com.jetbrains.python.psi.PyRecursiveElementVisitor
 import com.jetbrains.python.psi.PyStringLiteralExpression
 import com.jetbrains.python.psi.impl.PyFileImpl
 import java.nio.file.Path
+import java.nio.file.Paths
 import javax.swing.Icon
 
 
@@ -20,6 +25,21 @@ val PLEASE_ICON = IconLoader.getIcon("/icons/please.png", PleaseBuildFileType.ja
 object PleaseLanguage : Language("Please")
 
 abstract class PleaseFileType : LanguageFileType(PleaseLanguage)
+
+
+object PleaseConfigFileType : PleaseFileType() {
+    override fun getIcon() = PLEASE_ICON
+
+    override fun getName() = "Please cxonfig file"
+
+    override fun getDefaultExtension() = ".plzconfig"
+
+    override fun getDescription() = "Please config file"
+
+    override fun getDisplayName(): String {
+        return ".plzconfig"
+    }
+}
 
 object PleaseBuildFileType : PleaseFileType() {
     override fun getIcon() = PLEASE_ICON
@@ -31,7 +51,7 @@ object PleaseBuildFileType : PleaseFileType() {
     override fun getDescription() = "Please BUILD file"
 
     override fun getDisplayName(): String {
-        return "PleaseBuild"
+        return "BUILD"
     }
 }
 
@@ -45,7 +65,7 @@ object PleaseBuildDefFileType : PleaseFileType() {
     override fun getDescription() = "Please build definition file"
 
     override fun getDisplayName(): String {
-        return "PleaseDefs"
+        return ".build_defs"
     }
 }
 
@@ -86,11 +106,11 @@ class PleaseFile(viewProvider: FileViewProvider, private var type : PleaseFileTy
     }
 
     private fun locatePleaseRepo() {
-        // TODO(jpoole): move build defs out into their own file type
         if (locatedRepoRoot) {
             return
         }
-        var dir = Path.of(virtualFile.path).parent
+        val p = getViewProvider().getVirtualFile().path
+        var dir = Path.of(p).parent
         val path = mutableListOf<String>()
         while(true) {
             if(dir == null){
@@ -110,7 +130,7 @@ class PleaseFile(viewProvider: FileViewProvider, private var type : PleaseFileTy
         }
     }
 
-    fun targets() : List<Target> {
+    fun targets() : List<PsiTarget> {
         val pkg = getPleasePackage()
         if(pkg != null) {
             val visitor = TargetVisitor(pkg)
@@ -147,18 +167,28 @@ class PleaseFile(viewProvider: FileViewProvider, private var type : PleaseFileTy
                 }
         }
     }
+
+    fun find(project: Project, pkgName : String) : PleaseFile? {
+        val projectRoot = getProjectRoot() ?: return null
+        val virtFile = VfsUtil.findFile(Paths.get(projectRoot.toString(), pkgName), false)?.children
+            ?.firstOrNull { it.fileType == PleaseBuildFileType } ?: return null
+
+        val psiFile = PsiUtilCore.getPsiFile(project, virtFile)
+        return if(psiFile is PleaseFile) psiFile else null
+    }
+
 }
 
-fun (PyCallExpression).asTarget(pkgName: String) : Target? {
+fun (PyCallExpression).asTarget(pkgName: String) : PsiTarget? {
     val nameArg = argumentList?.getKeywordArgument("name")?.valueExpression
     if(nameArg != null && nameArg is PyStringLiteralExpression) {
-        return Target("//$pkgName:${nameArg.stringValue}", nameArg.stringValue, this)
+        return PsiTarget("//$pkgName:${nameArg.stringValue}", nameArg.stringValue, this)
     }
     return null
 }
 
 private class TargetVisitor(private val pkgName : String) : PyRecursiveElementVisitor() {
-    val targets = mutableListOf<Target>()
+    val targets = mutableListOf<PsiTarget>()
 
     override fun visitPyCallExpression(node: PyCallExpression) {
         val target = node.asTarget(pkgName)
@@ -168,7 +198,10 @@ private class TargetVisitor(private val pkgName : String) : PyRecursiveElementVi
     }
 }
 
-data class Target(val label : String, val name : String, val element: PyCallExpression)
+/**
+ * PsiTarget is a build target from an AST perspective.
+ */
+data class PsiTarget(val label : String, val name : String, val element: PyCallExpression) : PsiElement by element
 
 class PleasePythonInspections : PyInspectionExtension() {
     override fun ignoreInterpreterWarnings(file: PyFile): Boolean {

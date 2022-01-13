@@ -6,9 +6,7 @@ import com.intellij.execution.DefaultExecutionResult
 import com.intellij.execution.ExecutionResult
 import com.intellij.execution.Executor
 import com.intellij.execution.configurations.GeneralCommandLine
-import com.intellij.execution.configurations.PtyCommandLine
 import com.intellij.execution.process.ProcessHandler
-import com.intellij.execution.process.ProcessHandlerFactory
 import com.intellij.execution.process.ProcessHandlerFactoryImpl
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.execution.runners.ProgramRunner
@@ -21,6 +19,7 @@ import com.intellij.openapi.progress.Task
 import com.intellij.util.text.SemVer
 import com.intellij.xdebugger.XDebugProcess
 import com.intellij.xdebugger.XDebugSession
+import net.thoughtmachine.please.plugin.graph.BuildTarget
 import net.thoughtmachine.please.plugin.pleasecommandline.Please
 import net.thoughtmachine.please.plugin.runconfiguration.*
 import org.apache.tools.ant.types.Commandline
@@ -31,8 +30,9 @@ import java.nio.charset.Charset
 
 
 object GoStateProvider : PleaseDebugRunStateProvider {
-    override fun canRun(config: PleaseRunConfigurationBase): Boolean {
-        return true
+    override fun canRun(target: BuildTarget): Boolean {
+        System.out.println(target.kind)
+        return target.kind == "go_test" || target.kind == "go_binary"
     }
 
     override fun getRunState(config: PleaseRunConfigurationBase): PleaseDebugState {

@@ -11,10 +11,15 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.project.Project
+import com.intellij.psi.search.GlobalSearchScope
+import com.intellij.util.indexing.FileBasedIndex
 import com.intellij.util.net.NetUtils
 import com.intellij.xdebugger.XDebugProcess
 import com.intellij.xdebugger.XDebugSession
 import com.intellij.xdebugger.XDebuggerBundle
+import net.thoughtmachine.please.plugin.graph.BuildLabel
+import net.thoughtmachine.please.plugin.graph.BuildTarget
+import net.thoughtmachine.please.plugin.graph.PackageIndexExtension
 import org.jetbrains.debugger.DebuggableRunConfiguration
 import java.io.IOException
 import java.net.InetAddress
@@ -57,8 +62,13 @@ interface PleaseRunConfigurationBase : DebuggableRunConfiguration {
      * Returns a list of PleaseTargetRunStateProvider that are applicable to this run configuration
      */
     fun getDebugRunStateProviders() : List<PleaseDebugRunStateProvider> {
+        val label = BuildLabel.parse(target())
+        val pkgs = FileBasedIndex.getInstance().getValues(PackageIndexExtension.name, label.pkg, GlobalSearchScope.allScope(project))
+
+        val target = pkgs.first().targets[label]!!
+
         return runStateProviderEP.extensionList
-            .filter { it.canRun(this) }
+            .filter { it.canRun(target) }
     }
 
     companion object {
@@ -71,7 +81,7 @@ interface PleaseDebugRunStateProvider {
     /**
      * Whether this can provide a DebuggableRunProfileState for the given run configuration
      */
-    fun canRun(config: PleaseRunConfigurationBase) : Boolean
+    fun canRun(config: BuildTarget) : Boolean
 
     /**
      * Returns DebuggableRunProfileState for the given run configuration

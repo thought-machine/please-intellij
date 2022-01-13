@@ -11,7 +11,7 @@ import com.intellij.patterns.PlatformPatterns
 import com.intellij.util.ProcessingContext
 import com.jetbrains.python.psi.PyStringLiteralExpression
 import net.thoughtmachine.please.plugin.PleaseFile
-import net.thoughtmachine.please.plugin.Target
+import net.thoughtmachine.please.plugin.PsiTarget
 import java.util.stream.Collectors
 
 class BuildLabelCompletionContributor : CompletionContributor() {
@@ -67,7 +67,7 @@ class BuildLabelCompletionProvider : CompletionProvider<CompletionParameters>() 
         }
     }
 
-    private fun targetsForFile(file: PleaseFile, prefix: String): List<Target> {
+    private fun targetsForFile(file: PleaseFile, prefix: String): List<PsiTarget> {
         return file.targets().filter { it.name.startsWith(prefix) }
     }
 
