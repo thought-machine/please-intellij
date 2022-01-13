@@ -81,7 +81,7 @@ class PleaseGoDebugState(
             "--listen=:${address.port}", "--wd=${config.args.workingDir}", "--") + config.args.programArgs
         val plzArgs = Commandline.translateCommandline(config.pleaseArgs()).toList()
         val cmd = GeneralCommandLine(Please(config.project, pleaseArgs = plzArgs).run(
-            config.args.target,
+            config.args.target.label.toString(),
             inTmpDir = true,
             cmd = runCmd
         ))
@@ -100,10 +100,10 @@ class PleaseGoDebugState(
         val plzArgs = Commandline.translateCommandline(config.args.pleaseArgs).toList()
 
         val cmd = if (shouldExec) {
-            GeneralCommandLine(Please(config.project, pleaseArgs = plzArgs).exec(config.args.target, dlvCmd))
+            GeneralCommandLine(Please(config.project, pleaseArgs = plzArgs).exec(config.args.target.toString(), dlvCmd))
         } else {
             GeneralCommandLine(Please(config.project, pleaseArgs = plzArgs).run(
-                config.args.target,
+                config.args.target.toString(),
                 inTmpDir = true,
                 cmd = dlvCmd
             ))
@@ -146,7 +146,7 @@ class PleaseGoDebugState(
 
             override fun run(indicator: ProgressIndicator) {
                 val plzArgs = Commandline.translateCommandline(config.pleaseArgs()).toList()
-                val cmd = GeneralCommandLine(Please(this.project, pleaseArgs = plzArgs).build(config.target()))
+                val cmd = GeneralCommandLine(Please(this.project, pleaseArgs = plzArgs).build(config.target().label.toString()))
 
                 cmd.setWorkDirectory(project.basePath!!)
                 cmd.isRedirectErrorStream = true

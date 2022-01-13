@@ -34,7 +34,7 @@ interface PleaseRunConfigurationBase : DebuggableRunConfiguration {
      */
     fun getActiveRunStateProvider() : PleaseDebugRunStateProvider
 
-    fun target() :String
+    fun target() : BuildTarget
     fun pleaseArgs(): String
 
     override fun computeDebugAddress(state: RunProfileState?): InetSocketAddress {
@@ -62,13 +62,10 @@ interface PleaseRunConfigurationBase : DebuggableRunConfiguration {
      * Returns a list of PleaseTargetRunStateProvider that are applicable to this run configuration
      */
     fun getDebugRunStateProviders() : List<PleaseDebugRunStateProvider> {
-        val label = BuildLabel.parse(target())
-        val pkgs = FileBasedIndex.getInstance().getValues(PackageIndexExtension.name, label.pkg, GlobalSearchScope.allScope(project))
 
-        val target = pkgs.first().targets[label]!!
 
         return runStateProviderEP.extensionList
-            .filter { it.canRun(target) }
+            .filter { it.canRun(target()) }
     }
 
     companion object {

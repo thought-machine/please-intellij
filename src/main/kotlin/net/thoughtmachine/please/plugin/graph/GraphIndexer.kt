@@ -2,6 +2,8 @@ package net.thoughtmachine.please.plugin.graph
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
+import com.intellij.openapi.project.Project
+import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.util.indexing.*
 import com.intellij.util.io.DataExternalizer
 import com.intellij.util.io.KeyDescriptor
@@ -51,7 +53,7 @@ object PackageIndexExtension :  FileBasedIndexExtension<String, Package>() {
 }
 
 object PackageExternalizer : DataExternalizer<Package> {
-    val mapper = ObjectMapper().registerModule(KotlinModule())
+    val mapper = ObjectMapper().registerModule(KotlinModule.Builder().build())
 
     override fun save(out: DataOutput, value: Package) {
         out.writeUTF(mapper.writeValueAsString(value))
@@ -79,4 +81,11 @@ class PackageIndexer : DataIndexer<String, Package, FileContent> {
         return mapOf(pkgPath to Package("", PackageLabel(pkgPath, null), targets))
     }
 
+}
+
+fun resolveTarget(project: Project, target: String): BuildTarget {
+    val label = BuildLabel.parse(target)
+    val pkgs = FileBasedIndex.getInstance().getValues(PackageIndexExtension.name, label.pkg, GlobalSearchScope.allScope(project))
+
+    return pkgs.first().targets[label] ?: BuildTarget.of(target)
 }

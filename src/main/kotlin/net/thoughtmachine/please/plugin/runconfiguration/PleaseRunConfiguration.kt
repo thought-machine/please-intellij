@@ -4,12 +4,16 @@ import com.intellij.execution.Executor
 import com.intellij.execution.configurations.*
 import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.execution.runners.ExecutionEnvironment
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Computable
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTextField
 import com.intellij.util.ui.FormBuilder
 import net.thoughtmachine.please.plugin.PLEASE_ICON
+import net.thoughtmachine.please.plugin.graph.BuildTarget
+import net.thoughtmachine.please.plugin.graph.resolveTarget
 import net.thoughtmachine.please.plugin.pleasecommandline.Please
 import org.apache.tools.ant.types.Commandline
 import org.jdom.Element
@@ -17,7 +21,7 @@ import javax.swing.JComponent
 import javax.swing.JPanel
 
 data class PleaseRunConfigArgs(
-    var target: String,
+    var target: BuildTarget,
     var pleaseArgs: String = "",
     var programArgs: String = "",
     var workingDir: String = ""
@@ -26,7 +30,7 @@ data class PleaseRunConfigArgs(
 class PleaseRunConfigurationType : ConfigurationTypeBase("PleaseRunConfigurationType", "plz run", "Run a build target in a please project", PLEASE_ICON) {
     class Factory(type : PleaseRunConfigurationType) : ConfigurationFactory(type) {
         override fun createTemplateConfiguration(project: Project): RunConfiguration {
-            return PleaseRunConfiguration(project, this, PleaseRunConfigArgs("//some:target"))
+            return PleaseRunConfiguration(project, this, PleaseRunConfigArgs(BuildTarget.of("//some:target")))
         }
 
         override fun getId(): String {
@@ -56,14 +60,14 @@ class PleaseRunConfigurationSettings : SettingsEditor<PleaseRunConfiguration>() 
     }
 
     override fun applyEditorTo(s: PleaseRunConfiguration) {
-        s.args.target = target.text
+        s.args.target = resolveTarget(s.project, target.text)
         s.args.pleaseArgs = pleaseArgs.text
         s.args.programArgs = programArgs.text
         s.args.workingDir = workingDir.text
     }
 
     override fun resetEditorFrom(s: PleaseRunConfiguration) {
-        target.text = s.args.target
+        target.text = s.args.target.label.toString()
         pleaseArgs.text = s.args.pleaseArgs
         programArgs.text = s.args.programArgs
         workingDir.text = s.args.workingDir
@@ -99,7 +103,7 @@ class PleaseRunConfiguration(
         val plzArgs = Commandline.translateCommandline(args.pleaseArgs).toList()
 
         if (executor == PleaseBuildExecutor) {
-            return PleaseBuildConfiguration.getBuildProfileState(project, args.target, plzArgs)
+            return PleaseBuildConfiguration.getBuildProfileState(project, args.target.toString(), plzArgs)
         }
 
         if (executor == DefaultDebugExecutor.getDebugExecutorInstance()) {
@@ -108,19 +112,23 @@ class PleaseRunConfiguration(
 
         // TODO(jpoole): Implement working directories for run states
         val programArgs = Commandline.translateCommandline(args.programArgs).toList()
-        return PleaseProfileState(project, Please(project, pleaseArgs = plzArgs).run(args.target, programArgs = programArgs))
+        return PleaseProfileState(project, Please(project, pleaseArgs = plzArgs).run(args.target.toString(), programArgs = programArgs))
     }
 
     override fun writeExternal(element: Element) {
-        element.setAttribute("target", args.target)
+        element.setAttribute("target", args.target.toString())
         element.setAttribute("pleaseArgs", args.pleaseArgs)
         element.setAttribute("programArgs", args.programArgs)
         element.setAttribute("workingDir", args.workingDir)
     }
 
     override fun readExternal(element: Element) {
+        val target = ApplicationManager.getApplication().runReadAction(Computable {
+             resolveTarget(project, element.getAttributeValue("target") ?: "//some:target")
+        })
+
         args = PleaseRunConfigArgs(
-            target = element.getAttributeValue("target") ?: "//some:target",
+            target = target,
             pleaseArgs = element.getAttributeValue("pleaseArgs") ?: "",
             programArgs = element.getAttributeValue("programArgs") ?: "",
             workingDir = element.getAttributeValue("workingDir") ?: ""

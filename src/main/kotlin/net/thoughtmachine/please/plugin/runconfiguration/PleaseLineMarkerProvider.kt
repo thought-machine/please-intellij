@@ -13,6 +13,7 @@ import com.jetbrains.python.psi.PyCallExpression
 import com.jetbrains.python.psi.PyStringLiteralExpression
 import net.thoughtmachine.please.plugin.PleaseBuildFileType
 import net.thoughtmachine.please.plugin.PleaseFile
+import net.thoughtmachine.please.plugin.graph.resolveTarget
 
 
 /**
@@ -89,7 +90,7 @@ object PleaseLineMarkerProvider : RunLineMarkerContributor() {
     private fun newRunConfig(project: Project, target: String) = PleaseRunConfiguration(
         project,
         PleaseRunConfigurationType.Factory(PleaseRunConfigurationType()),
-        PleaseRunConfigArgs(target)
+        PleaseRunConfigArgs(resolveTarget(project, target))
     )
 
     private fun newBuildConfig(project: Project, target: String) = PleaseBuildConfiguration(
@@ -101,7 +102,7 @@ object PleaseLineMarkerProvider : RunLineMarkerContributor() {
     fun newTestConfig(project: Project, target: String, tests: String = "") = PleaseTestConfiguration(
         project,
         PleaseTestConfigurationType.Factory(PleaseTestConfigurationType()),
-        PleaseTestConfigArgs(target, tests=tests)
+        PleaseTestConfigArgs(resolveTarget(project, target), tests=tests)
     )
 
 }

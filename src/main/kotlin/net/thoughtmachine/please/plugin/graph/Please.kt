@@ -35,6 +35,12 @@ data class BuildTarget(val label: BuildLabel, val kind: String, val labels: List
     override fun toString(): String {
         return label.toString()
     }
+
+    companion object {
+        fun of(label: String) : BuildTarget {
+            return BuildTarget(BuildLabel.parse(label), "", listOf())
+        }
+    }
 }
 
 data class PackageLabel(val pkg: String, val subrepo: String? = null) {
