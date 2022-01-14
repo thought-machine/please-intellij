@@ -61,7 +61,11 @@ data class PackageLabel(val pkg: String, val subrepo: String? = null) {
 
 }
 
-data class Package(val pleaseRoot : String, val pkg: PackageLabel, val targets: Map<BuildLabel, BuildTarget>)
+data class Package(val pleaseRoot : String, val pkg: PackageLabel, val targets: Map<BuildLabel, BuildTarget>) {
+    fun targetByName(name: String) : BuildTarget? {
+        return targets[BuildLabel(name, pkg.pkg, pkg.subrepo)]
+    }
+}
 
 data class BuildGraph(
     private val packages: MutableMap<PackageLabel, Package>,

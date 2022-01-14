@@ -36,6 +36,10 @@ class Please(
         return args
     }
 
+    fun debug(target: String, port: Int, programArgs: List<String>) : PleaseCommand {
+        return (args() + listOf("debug", "--port", port.toString(), target, "--") + programArgs)
+    }
+
     fun exec(target: String, execCmd: List<String>, shareNetwork : Boolean = true) : PleaseCommand {
         val args = args().toMutableList()
         args.addAll(listOf("exec", target))

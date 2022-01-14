@@ -109,8 +109,7 @@ class PleaseFile(viewProvider: FileViewProvider, private var type : PleaseFileTy
         if (locatedRepoRoot) {
             return
         }
-        val p = getViewProvider().getVirtualFile().path
-        var dir = Path.of(p).parent
+        var dir = Path.of(virtualFile.path).parent
         val path = mutableListOf<String>()
         while(true) {
             if(dir == null){
@@ -131,13 +130,9 @@ class PleaseFile(viewProvider: FileViewProvider, private var type : PleaseFileTy
     }
 
     fun targets() : List<PsiTarget> {
-        val pkg = getPleasePackage()
-        if(pkg != null) {
-            val visitor = TargetVisitor(pkg)
-            accept(visitor)
-            return visitor.targets
-        }
-        return listOf()
+        val visitor = TargetVisitor()
+        accept(visitor)
+        return visitor.targets
     }
 
     fun getSubincludes() : Set<String> {
@@ -179,19 +174,19 @@ class PleaseFile(viewProvider: FileViewProvider, private var type : PleaseFileTy
 
 }
 
-fun (PyCallExpression).asTarget(pkgName: String) : PsiTarget? {
+fun (PyCallExpression).asTarget(): PsiTarget? {
     val nameArg = argumentList?.getKeywordArgument("name")?.valueExpression
     if(nameArg != null && nameArg is PyStringLiteralExpression) {
-        return PsiTarget("//$pkgName:${nameArg.stringValue}", nameArg.stringValue, this)
+        return PsiTarget( nameArg.stringValue, this)
     }
     return null
 }
 
-private class TargetVisitor(private val pkgName : String) : PyRecursiveElementVisitor() {
+private class TargetVisitor : PyRecursiveElementVisitor() {
     val targets = mutableListOf<PsiTarget>()
 
     override fun visitPyCallExpression(node: PyCallExpression) {
-        val target = node.asTarget(pkgName)
+        val target = node.asTarget()
         if (target != null) {
             targets.add(target)
         }
@@ -201,7 +196,7 @@ private class TargetVisitor(private val pkgName : String) : PyRecursiveElementVi
 /**
  * PsiTarget is a build target from an AST perspective.
  */
-data class PsiTarget(val label : String, val name : String, val element: PyCallExpression) : PsiElement by element
+data class PsiTarget(val name : String, val element: PyCallExpression) : PsiElement by element
 
 class PleasePythonInspections : PyInspectionExtension() {
     override fun ignoreInterpreterWarnings(file: PyFile): Boolean {

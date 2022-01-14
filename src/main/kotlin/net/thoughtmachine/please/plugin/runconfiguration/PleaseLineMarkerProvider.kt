@@ -8,11 +8,16 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
 import com.intellij.psi.impl.source.tree.LeafPsiElement
+import com.intellij.util.indexing.FileBasedIndex
 import com.jetbrains.python.PyTokenTypes
 import com.jetbrains.python.psi.PyCallExpression
 import com.jetbrains.python.psi.PyStringLiteralExpression
+import com.jetbrains.rd.util.first
+import com.jetbrains.rd.util.firstOrNull
 import net.thoughtmachine.please.plugin.PleaseBuildFileType
 import net.thoughtmachine.please.plugin.PleaseFile
+import net.thoughtmachine.please.plugin.graph.BuildTarget
+import net.thoughtmachine.please.plugin.graph.PackageIndexExtension
 import net.thoughtmachine.please.plugin.graph.resolveTarget
 
 
@@ -48,15 +53,14 @@ object PleaseLineMarkerProvider : RunLineMarkerContributor() {
 
         val name = callExpr.argumentList?.getKeywordArgument("name")
         if (name != null) {
+            val pkg = FileBasedIndex.getInstance().getFileData(PackageIndexExtension.name, file.virtualFile, element.project)
+                .firstOrNull()?.value ?: return null
             val expr = name.valueExpression
             if(expr is PyStringLiteralExpression) {
-                if(file.getPleasePackage() == null) {
-                    return null
-                }
-                val target = "//${file.getPleasePackage()}:${expr.stringValue}"
+                val target = pkg.targets
                 return Info(
                     AllIcons.Actions.Execute,
-                    filterGoActions(element, target).toTypedArray(),
+                    filterActions(element, target).toTypedArray(),
                 ) { "run $target" }
             }
         }
@@ -64,7 +68,7 @@ object PleaseLineMarkerProvider : RunLineMarkerContributor() {
         return null
     }
 
-    private fun filterGoActions(element: PsiElement, target: String): List<AnAction> {
+    private fun filterActions(element: PsiElement, target: BuildTarget): List<AnAction> {
         val actions = mutableListOf(PleaseAction(element.project, target, "build",
             PleaseBuildExecutor, newBuildConfig(element.project, target)))
 
@@ -90,7 +94,7 @@ object PleaseLineMarkerProvider : RunLineMarkerContributor() {
     private fun newRunConfig(project: Project, target: String) = PleaseRunConfiguration(
         project,
         PleaseRunConfigurationType.Factory(PleaseRunConfigurationType()),
-        PleaseRunConfigArgs(resolveTarget(project, target))
+        PleaseRunConfigArgs(target)
     )
 
     private fun newBuildConfig(project: Project, target: String) = PleaseBuildConfiguration(
@@ -102,7 +106,7 @@ object PleaseLineMarkerProvider : RunLineMarkerContributor() {
     fun newTestConfig(project: Project, target: String, tests: String = "") = PleaseTestConfiguration(
         project,
         PleaseTestConfigurationType.Factory(PleaseTestConfigurationType()),
-        PleaseTestConfigArgs(resolveTarget(project, target), tests=tests)
+        PleaseTestConfigArgs(target, tests=tests)
     )
 
 }

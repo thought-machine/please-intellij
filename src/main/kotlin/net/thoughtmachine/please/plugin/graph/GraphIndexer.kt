@@ -32,6 +32,7 @@ object PackageIndexExtension :  FileBasedIndexExtension<String, Package>() {
     }
 
     override fun dependsOnFileContent() = true
+
     override fun getKeyDescriptor(): KeyDescriptor<String> = object : KeyDescriptor<String> {
         override fun getHashCode(value: String): Int {
             return value.hashCode()
@@ -76,6 +77,7 @@ class PackageIndexer : DataIndexer<String, Package, FileContent> {
             BuildTarget(label, it.element.callee?.text ?: "", listOf())
         }.associateBy { it.label }
 
+        file.virtualFile
         val pkgPath = file.getPleasePackage() ?: return mapOf()
 
         return mapOf(pkgPath to Package("", PackageLabel(pkgPath, null), targets))
@@ -87,5 +89,5 @@ fun resolveTarget(project: Project, target: String): BuildTarget {
     val label = BuildLabel.parse(target)
     val pkgs = FileBasedIndex.getInstance().getValues(PackageIndexExtension.name, label.pkg, GlobalSearchScope.allScope(project))
 
-    return pkgs.first().targets[label] ?: BuildTarget.of(target)
+    return pkgs.first().targets[label]!!
 }

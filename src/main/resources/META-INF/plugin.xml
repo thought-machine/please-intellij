@@ -68,8 +68,8 @@
     </extensions>
 
     <extensionPoints>
-        <extensionPoint name="pleaseDebugRunStateProvider"
-                        interface="net.thoughtmachine.please.plugin.runconfiguration.PleaseDebugRunStateProvider"/>
+        <extensionPoint name="pleaseDebugger"
+                        interface="net.thoughtmachine.please.plugin.runconfiguration.PleaseDebugger"/>
     </extensionPoints>
 
     <change-notes><![CDATA[

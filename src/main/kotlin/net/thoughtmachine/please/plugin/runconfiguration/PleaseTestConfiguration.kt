@@ -21,7 +21,7 @@ import javax.swing.JComponent
 import javax.swing.JPanel
 
 data class PleaseTestConfigArgs(
-    var target: BuildTarget,
+    var target: String,
     var pleaseArgs: String = "",
     var tests: String = ""
 )
@@ -29,7 +29,7 @@ data class PleaseTestConfigArgs(
 class PleaseTestConfigurationType : ConfigurationTypeBase("PleaseTestConfigurationType", "plz test", "Test a build target in a please project", PLEASE_ICON) {
     class Factory(type : PleaseTestConfigurationType) : ConfigurationFactory(type) {
         override fun createTemplateConfiguration(project: Project): RunConfiguration {
-            return PleaseTestConfiguration(project, this, PleaseTestConfigArgs(BuildTarget.of("//some:target")))
+            return PleaseTestConfiguration(project, this, PleaseTestConfigArgs("//some:target"))
         }
 
         override fun getId(): String {
@@ -57,7 +57,7 @@ class PleaseTestConfigurationSettings : SettingsEditor<PleaseTestConfiguration>(
     }
 
     override fun applyEditorTo(s: PleaseTestConfiguration) {
-        s.args.target = resolveTarget(s.project, target.text)
+        s.args.target = target.text
         s.args.pleaseArgs = pleaseArgs.text
         s.args.tests = tests.text
     }
@@ -77,18 +77,8 @@ class PleaseTestConfiguration(
     factory: ConfigurationFactory,
     var args: PleaseTestConfigArgs
 ) : LocatableConfigurationBase<RunProfileState>(project, factory, "plz test"), PleaseRunConfigurationBase {
-    // TODO(jpoole): Don't just assume we want to use the first one (configurable? What happens when there's none?)
-    var runStateProvider : PleaseDebugRunStateProvider? = null
-
     override fun getConfigurationEditor(): SettingsEditor<out RunConfiguration> {
         return PleaseTestConfigurationSettings()
-    }
-
-    override fun getActiveRunStateProvider(): PleaseDebugRunStateProvider {
-        if (runStateProvider == null) {
-            runStateProvider = getDebugRunStateProviders().first()
-        }
-        return runStateProvider!!
     }
 
     override fun target() = args.target
@@ -101,7 +91,7 @@ class PleaseTestConfiguration(
         }
 
         if (executor == DefaultDebugExecutor.getDebugExecutorInstance()) {
-            return getActiveRunStateProvider().getRunState(this)
+            return PleaseDebugState(this, computeDebugAddress(null))
         }
 
         return PleaseProfileState(project, Please(project, pleaseArgs = plzArgs).test(args.target.toString(), args.tests))
@@ -114,11 +104,8 @@ class PleaseTestConfiguration(
     }
 
     override fun readExternal(element: Element) {
-        val target = ApplicationManager.getApplication().runReadAction(Computable {
-            resolveTarget(project, element.getAttributeValue("target") ?: "//some:target")
-        })
         args = PleaseTestConfigArgs(
-            target = target,
+            target = element.getAttributeValue("target") ?: "//some:target",
             pleaseArgs = element.getAttributeValue("pleaseArgs") ?: "",
             tests = element.getAttributeValue("tests") ?: "",
         )
