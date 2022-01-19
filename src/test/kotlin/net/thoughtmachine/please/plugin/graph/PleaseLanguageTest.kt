@@ -10,11 +10,11 @@ import java.io.DataOutputStream
 class GraphTest : TestCase() {
     @Test
     fun testParseLabel() {
-        assertEquals(BuildLabel("target", "some"), BuildLabel.parse("//some:target"))
-        assertEquals(BuildLabel("target", "some", "test"), BuildLabel.parse("@test//some:target"))
-        assertEquals(BuildLabel("target", "some", ""), BuildLabel.parse("/////some:target"))
-        assertEquals(BuildLabel("target", "some", ""), BuildLabel.parse("@//some:target"))
-        assertEquals(BuildLabel("some", "some"), BuildLabel.parse("//some"))
+        assertEquals(BuildLabel("target", "some"), parseLabel("//some:target"))
+        assertEquals(BuildLabel("target", "some", "test"), parseLabel("@test//some:target"))
+        assertEquals(BuildLabel("target", "some", ""), parseLabel("/////some:target"))
+        assertEquals(BuildLabel("target", "some", ""), parseLabel("@//some:target"))
+        assertEquals(BuildLabel("some", "some"), parseLabel("//some"))
     }
 
     @Test
@@ -22,8 +22,8 @@ class GraphTest : TestCase() {
         val pkg = Package(
             pleaseRoot = "someRoot",
             pkg = PackageLabel("some/package"),
-            targets = mapOf(BuildLabel.parse("//some/package:target") to
-                BuildTarget(BuildLabel.parse("//some/package:target"), "go_library", listOf("go"))
+            targets = mapOf("//some/package:target" to
+                BuildTarget(parseLabel("//some/package:target"), binary = true, test = false,"go_library", listOf("go"))
             )
         )
         val buf = ByteArrayOutputStream()

@@ -5,6 +5,7 @@ import com.intellij.openapi.editor.event.EditorFactoryEvent
 import com.intellij.openapi.editor.event.EditorFactoryListener
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.progress.ProgressManager
+import com.intellij.openapi.project.DumbService
 import com.intellij.psi.PsiManager
 import net.thoughtmachine.please.plugin.PleaseFile
 
@@ -17,7 +18,9 @@ class SubincludeEditorFactoryListener : EditorFactoryListener {
                 return
             }
 
-            ProgressManager.getInstance().run(ResolveSubincludeBackgroundTask(file, file.getSubincludes().toList()))
+            DumbService.getInstance(file.project).smartInvokeLater {
+                ProgressManager.getInstance().run(ResolveSubincludeBackgroundTask(file, file.getSubincludes().toList()))
+            }
         }
     }
 }

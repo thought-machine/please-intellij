@@ -10,12 +10,16 @@ import com.intellij.psi.FileViewProvider
 import com.intellij.psi.PsiElement
 import com.intellij.psi.util.PsiUtilCore
 import com.intellij.util.castSafelyTo
+import com.intellij.util.indexing.FileBasedIndex
 import com.jetbrains.python.inspections.PyInspectionExtension
 import com.jetbrains.python.psi.PyCallExpression
 import com.jetbrains.python.psi.PyFile
 import com.jetbrains.python.psi.PyRecursiveElementVisitor
 import com.jetbrains.python.psi.PyStringLiteralExpression
 import com.jetbrains.python.psi.impl.PyFileImpl
+import com.jetbrains.rd.util.firstOrNull
+import net.thoughtmachine.please.plugin.graph.Package
+import net.thoughtmachine.please.plugin.graph.PackageIndexExtension
 import java.nio.file.Path
 import java.nio.file.Paths
 import javax.swing.Icon
@@ -70,9 +74,6 @@ object PleaseBuildDefFileType : PleaseFileType() {
 }
 
 class PleaseFile(viewProvider: FileViewProvider, private var type : PleaseFileType) : PyFileImpl(viewProvider, PleaseLanguage) {
-    var locatedRepoRoot = false
-    private var pkg : String? = null
-    private var repo : Path? = null
     private var subincludes : MutableSet<String>? = null
 
     override fun getFileType(): FileType {
@@ -90,43 +91,14 @@ class PleaseFile(viewProvider: FileViewProvider, private var type : PleaseFileTy
     /**
      * Gets the Please package name for the File by walking up the file tree to find the .plzconfig.
      */
-    fun getPleasePackage() : String? {
+    fun getPleasePackage() : Package? {
         // Build definitions file don't belong to a package.
         if (type == PleaseBuildDefFileType) {
             return null
         }
 
-        locatePleaseRepo()
-        return pkg
-    }
-
-    fun getProjectRoot() : Path? {
-        locatePleaseRepo()
-        return repo
-    }
-
-    private fun locatePleaseRepo() {
-        if (locatedRepoRoot) {
-            return
-        }
-        var dir = Path.of(virtualFile.path).parent
-        val path = mutableListOf<String>()
-        while(true) {
-            if(dir == null){
-                return
-            }
-
-            val dirFile = dir.toFile()
-            if (dir.toFile().list()?.find { it == ".plzconfig" } != null) {
-                pkg = path.joinToString("/")
-                repo = dir.toAbsolutePath()
-                locatedRepoRoot = true
-                return
-            } else {
-                path.add(0, dirFile.name)
-                dir = dir.parent
-            }
-        }
+        return FileBasedIndex.getInstance().getFileData(PackageIndexExtension.name, virtualFile, project)
+            .firstOrNull()?.value
     }
 
     fun targets() : List<PsiTarget> {
@@ -164,8 +136,8 @@ class PleaseFile(viewProvider: FileViewProvider, private var type : PleaseFileTy
     }
 
     fun find(project: Project, pkgName : String) : PleaseFile? {
-        val projectRoot = getProjectRoot() ?: return null
-        val virtFile = VfsUtil.findFile(Paths.get(projectRoot.toString(), pkgName), false)?.children
+        val projectRoot = getPleasePackage()?.pleaseRoot ?: return null
+        val virtFile = VfsUtil.findFile(Paths.get(projectRoot, pkgName), false)?.children
             ?.firstOrNull { it.fileType == PleaseBuildFileType } ?: return null
 
         val psiFile = PsiUtilCore.getPsiFile(project, virtFile)
@@ -196,7 +168,11 @@ private class TargetVisitor : PyRecursiveElementVisitor() {
 /**
  * PsiTarget is a build target from an AST perspective.
  */
-data class PsiTarget(val name : String, val element: PyCallExpression) : PsiElement by element
+data class PsiTarget(val name : String, val element: PyCallExpression) : PsiElement by element {
+    fun kind() : String {
+        return element.callee?.text ?: ""
+    }
+}
 
 class PleasePythonInspections : PyInspectionExtension() {
     override fun ignoreInterpreterWarnings(file: PyFile): Boolean {

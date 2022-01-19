@@ -51,14 +51,13 @@ class Please(
         return args
     }
 
-    fun query(subcommand: String, arguments: Array<String>) : PleaseCommand {
+    fun query(subcommand: String, vararg arguments: String) : PleaseCommand {
         val args = args().toMutableList()
         args.addAll(listOf("query", subcommand, *arguments))
         return args
     }
-
     fun args() : List<String> {
-        val plz = PleaseProjectConfigurable.getPleasePath(project)
+        val plz = "/home/jpoole/please/plz-out/bin/src/please" // PleaseProjectConfigurable.getPleasePath(project)
         val args = mutableListOf(plz, "-c", config)
         if(plainOutput) {
             args.addAll(listOf("-p", "-v", "warning"))

@@ -12,13 +12,11 @@ import com.intellij.util.indexing.FileBasedIndex
 import com.jetbrains.python.PyTokenTypes
 import com.jetbrains.python.psi.PyCallExpression
 import com.jetbrains.python.psi.PyStringLiteralExpression
-import com.jetbrains.rd.util.first
 import com.jetbrains.rd.util.firstOrNull
 import net.thoughtmachine.please.plugin.PleaseBuildFileType
 import net.thoughtmachine.please.plugin.PleaseFile
 import net.thoughtmachine.please.plugin.graph.BuildTarget
 import net.thoughtmachine.please.plugin.graph.PackageIndexExtension
-import net.thoughtmachine.please.plugin.graph.resolveTarget
 
 
 /**
@@ -53,14 +51,13 @@ object PleaseLineMarkerProvider : RunLineMarkerContributor() {
 
         val name = callExpr.argumentList?.getKeywordArgument("name")
         if (name != null) {
-            val pkg = FileBasedIndex.getInstance().getFileData(PackageIndexExtension.name, file.virtualFile, element.project)
-                .firstOrNull()?.value ?: return null
+            val pkg = file.getPleasePackage() ?: return null
             val expr = name.valueExpression
             if(expr is PyStringLiteralExpression) {
-                val target = pkg.targets
+                val target = pkg.targetByName(expr.stringValue) ?: return null
                 return Info(
                     AllIcons.Actions.Execute,
-                    filterActions(element, target).toTypedArray(),
+                    filterActions(element.project, target).toTypedArray(),
                 ) { "run $target" }
             }
         }
@@ -68,26 +65,27 @@ object PleaseLineMarkerProvider : RunLineMarkerContributor() {
         return null
     }
 
-    private fun filterActions(element: PsiElement, target: BuildTarget): List<AnAction> {
-        val actions = mutableListOf(PleaseAction(element.project, target, "build",
-            PleaseBuildExecutor, newBuildConfig(element.project, target)))
+    private fun filterActions(project: Project, target: BuildTarget): List<AnAction> {
+        val label = target.toString()
+        val actions = mutableListOf(PleaseAction(project, label, "build",
+            PleaseBuildExecutor, newBuildConfig(project, label)))
 
-        // TODO(jscott) we should find a way of making this more generic for other languages
-        if (element.text == "go_binary") {
+        if (target.test) {
             actions.addAll(listOf(
-                PleaseAction(element.project, target, "run",
-                    DefaultRunExecutor.getRunExecutorInstance(), newRunConfig(element.project, target)),
-                PleaseAction(element.project, target, "run",
-                    DefaultDebugExecutor.getDebugExecutorInstance(), newRunConfig(element.project, target)),
+                PleaseAction(project, label, "test",
+                    DefaultRunExecutor.getRunExecutorInstance(), newTestConfig(project, label)),
+                PleaseAction(project, label, "test",
+                    DefaultDebugExecutor.getDebugExecutorInstance(), newTestConfig(project, label)),
             ))
-        } else if (element.text == "go_test") {
+        } else if (target.binary) {
             actions.addAll(listOf(
-                PleaseAction(element.project, target, "test",
-                    DefaultRunExecutor.getRunExecutorInstance(), newTestConfig(element.project, target)),
-                PleaseAction(element.project, target, "test",
-                    DefaultDebugExecutor.getDebugExecutorInstance(), newTestConfig(element.project, target)),
+                PleaseAction(project, label, "run",
+                    DefaultRunExecutor.getRunExecutorInstance(), newRunConfig(project, label)),
+                PleaseAction(project, label, "run",
+                    DefaultDebugExecutor.getDebugExecutorInstance(), newRunConfig(project, label)),
             ))
         }
+
         return actions
     }
 
