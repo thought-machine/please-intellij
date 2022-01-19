@@ -52,7 +52,7 @@ class BuildLabelReferenceProvider : PsiSymbolReferenceProvider {
             text.startsWith("//") -> {
                 val packagePath = text.removePrefix("//").substringBefore(":")
 
-                val pleaseFile = file.find(file.project, packagePath) ?: return emptyList()
+                val pleaseFile = file.find(packagePath) ?: return emptyList()
 
                 val name = if (text.contains(":")) text.substringAfter(":") else text.substringAfterLast("/")
 

@@ -3,7 +3,9 @@ package net.thoughtmachine.please.plugin
 import com.intellij.lang.Language
 import com.intellij.openapi.fileTypes.FileType
 import com.intellij.openapi.fileTypes.LanguageFileType
+import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.util.IconLoader
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.psi.FileViewProvider
@@ -17,9 +19,13 @@ import com.jetbrains.python.psi.PyFile
 import com.jetbrains.python.psi.PyRecursiveElementVisitor
 import com.jetbrains.python.psi.PyStringLiteralExpression
 import com.jetbrains.python.psi.impl.PyFileImpl
+import com.jetbrains.python.statistics.modules
 import com.jetbrains.rd.util.firstOrNull
 import net.thoughtmachine.please.plugin.graph.Package
 import net.thoughtmachine.please.plugin.graph.PackageIndexExtension
+import net.thoughtmachine.please.plugin.graph.PackageIndexer
+import net.thoughtmachine.please.plugin.graph.PackageService
+import net.thoughtmachine.please.plugin.pleasecommandline.Please
 import java.nio.file.Path
 import java.nio.file.Paths
 import javax.swing.Icon
@@ -30,20 +36,6 @@ object PleaseLanguage : Language("Please")
 
 abstract class PleaseFileType : LanguageFileType(PleaseLanguage)
 
-
-object PleaseConfigFileType : PleaseFileType() {
-    override fun getIcon() = PLEASE_ICON
-
-    override fun getName() = "Please cxonfig file"
-
-    override fun getDefaultExtension() = ".plzconfig"
-
-    override fun getDescription() = "Please config file"
-
-    override fun getDisplayName(): String {
-        return ".plzconfig"
-    }
-}
 
 object PleaseBuildFileType : PleaseFileType() {
     override fun getIcon() = PLEASE_ICON
@@ -97,8 +89,8 @@ class PleaseFile(viewProvider: FileViewProvider, private var type : PleaseFileTy
             return null
         }
 
-        return FileBasedIndex.getInstance().getFileData(PackageIndexExtension.name, virtualFile, project)
-            .firstOrNull()?.value
+        val (root, pkg) = PackageIndexer.forFile(this) ?: return null
+        return PackageService.resolvePackage(project, root, pkg)
     }
 
     fun targets() : List<PsiTarget> {
@@ -135,15 +127,14 @@ class PleaseFile(viewProvider: FileViewProvider, private var type : PleaseFileTy
         }
     }
 
-    fun find(project: Project, pkgName : String) : PleaseFile? {
+    /**
+     * find is a convenience function to find a BUILD file for a package in the same Please repo as this file
+     */
+    fun find(pkgName : String) : PleaseFile? {
         val projectRoot = getPleasePackage()?.pleaseRoot ?: return null
-        val virtFile = VfsUtil.findFile(Paths.get(projectRoot, pkgName), false)?.children
-            ?.firstOrNull { it.fileType == PleaseBuildFileType } ?: return null
 
-        val psiFile = PsiUtilCore.getPsiFile(project, virtFile)
-        return if(psiFile is PleaseFile) psiFile else null
+        return PackageIndexer.lookup(project, projectRoot, pkgName)
     }
-
 }
 
 fun (PyCallExpression).asTarget(): PsiTarget? {

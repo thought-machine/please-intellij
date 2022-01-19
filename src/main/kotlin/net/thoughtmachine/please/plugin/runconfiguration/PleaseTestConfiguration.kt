@@ -4,16 +4,12 @@ import com.intellij.execution.Executor
 import com.intellij.execution.configurations.*
 import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.execution.runners.ExecutionEnvironment
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.Computable
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTextField
 import com.intellij.util.ui.FormBuilder
 import net.thoughtmachine.please.plugin.PLEASE_ICON
-import net.thoughtmachine.please.plugin.graph.BuildTarget
-import net.thoughtmachine.please.plugin.graph.resolveTarget
 import net.thoughtmachine.please.plugin.pleasecommandline.Please
 import org.apache.tools.ant.types.Commandline
 import org.jdom.Element
@@ -87,14 +83,14 @@ class PleaseTestConfiguration(
     override fun getState(executor: Executor, environment: ExecutionEnvironment): RunProfileState {
         val plzArgs = Commandline.translateCommandline(args.pleaseArgs).toList()
         if (executor == PleaseBuildExecutor) {
-            return PleaseBuildConfiguration.getBuildProfileState(project, args.target.toString(), plzArgs)
+            return PleaseBuildConfiguration.getBuildProfileState(project, args.target, plzArgs)
         }
 
         if (executor == DefaultDebugExecutor.getDebugExecutorInstance()) {
-            return PleaseDebugState(this, computeDebugAddress(null))
+            return PleaseDebugState(this, environment, computeDebugAddress(null))
         }
 
-        return PleaseProfileState(project, Please(project, pleaseArgs = plzArgs).test(args.target.toString(), args.tests))
+        return PleaseProfileState(project, Please(project, pleaseArgs = plzArgs).test(args.target, args.tests))
     }
 
     override fun writeExternal(element: Element) {

@@ -94,7 +94,7 @@ class PleaseRunConfiguration(
         }
 
         if (executor == DefaultDebugExecutor.getDebugExecutorInstance()) {
-           return PleaseDebugState(this, computeDebugAddress(null))
+           return PleaseDebugState(this, environment, computeDebugAddress(null))
         }
 
         // TODO(jpoole): Implement working directories for run states

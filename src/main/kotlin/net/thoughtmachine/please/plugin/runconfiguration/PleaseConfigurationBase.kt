@@ -23,29 +23,23 @@ import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Computable
-import com.intellij.psi.search.GlobalSearchScope
-import com.intellij.util.SlowOperations
-import com.intellij.util.indexing.FileBasedIndex
+import com.intellij.openapi.util.Key
 import com.intellij.util.net.NetUtils
-import com.intellij.util.text.SemVer
 import com.intellij.xdebugger.XDebugProcess
 import com.intellij.xdebugger.XDebugSession
 import com.intellij.xdebugger.XDebuggerBundle
-import com.jetbrains.rd.util.string.print
-import net.thoughtmachine.please.plugin.graph.BuildLabel
-import net.thoughtmachine.please.plugin.graph.BuildTarget
-import net.thoughtmachine.please.plugin.graph.PackageIndexExtension
-import net.thoughtmachine.please.plugin.graph.resolveTarget
+import net.thoughtmachine.please.plugin.graph.*
 import net.thoughtmachine.please.plugin.pleasecommandline.Please
 import org.apache.tools.ant.types.Commandline
 import org.jetbrains.concurrency.AsyncPromise
 import org.jetbrains.concurrency.Promise
 import org.jetbrains.debugger.DebuggableRunConfiguration
 import java.io.IOException
-import java.lang.Exception
 import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.nio.charset.Charset
+
+val debuggerKey = Key.create<PleaseDebugger>("debugger")
 
 /**
  * A base interface grouping all the Please run configurations together
@@ -72,8 +66,7 @@ interface PleaseRunConfigurationBase : DebuggableRunConfiguration {
         executionResult: ExecutionResult?,
         environment: ExecutionEnvironment
     ): XDebugProcess {
-        val runProfile = environment.state as PleaseDebugState
-        return runProfile.debugger!!
+        return environment.getUserData(debuggerKey)!!
             .createDebugProcess(socketAddress, session, executionResult, environment)
     }
 }
@@ -97,9 +90,7 @@ interface PleaseDebugger {
     ): XDebugProcess
 }
 
-class PleaseDebugState(val config: PleaseRunConfigurationBase, val address: InetSocketAddress) : DebuggableRunProfileState {
-    var debugger : PleaseDebugger? = null
-
+class PleaseDebugState(val config: PleaseRunConfigurationBase, val environment: ExecutionEnvironment, val address: InetSocketAddress) : DebuggableRunProfileState {
     private fun startForPleaseRun(config: PleaseRunConfiguration): ProcessHandler {
         val plzArgs = Commandline.translateCommandline(config.pleaseArgs()).toList()
         val cmd = GeneralCommandLine(Please(config.project, pleaseArgs = plzArgs).debug(
@@ -146,18 +137,19 @@ class PleaseDebugState(val config: PleaseRunConfigurationBase, val address: Inet
             }
 
             override fun onThrowable(error: Throwable) {
-                Notifications.Bus.notify(Notification("Please", "Failed build ${config.target()}", "", NotificationType.ERROR))
                 promise.setError(error)
-
                 error.printStackTrace()
             }
 
             override fun run(indicator: ProgressIndicator) {
+                // TODO(jpoole): We should probably have some sort of repo root in the run config
                 val t = ApplicationManager.getApplication().runReadAction(Computable {
-                    resolveTarget(project, config.target()) })
-                debugger = runStateProviderEP.extensionList.first { it.canRun(t) }
+                    val l = parseLabel(config.target())
+                    PackageService.resolvePackage(project, l.pkg).firstOrNull()?.targetByName(l.name)
+                }) ?: throw RuntimeException("Can't find target ${config.target()}")
 
-
+                val debugger = runStateProviderEP.extensionList.firstOrNull { it.canRun(t) } ?: throw RuntimeException("No debuggers for ${config.target()}")
+                environment.putUserData(debuggerKey, debugger)
 
                 val plzArgs = Commandline.translateCommandline(config.pleaseArgs()).toList()
                 val cmd = GeneralCommandLine(Please(this.project, pleaseArgs = plzArgs).build(config.target()))
@@ -189,7 +181,6 @@ class PleaseDebugState(val config: PleaseRunConfigurationBase, val address: Inet
     companion object {
         private val runStateProviderEP = ExtensionPointName.create<PleaseDebugger>("net.thoughtmachine.please.plugin.pleaseDebugger")
     }
-
 }
 
 /**
