@@ -11,9 +11,6 @@ import com.intellij.execution.process.ProcessHandlerFactoryImpl
 import com.intellij.execution.runners.DebuggableRunProfileState
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.execution.runners.ProgramRunner
-import com.intellij.notification.Notification
-import com.intellij.notification.NotificationType
-import com.intellij.notification.Notifications
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ApplicationManager
@@ -39,7 +36,7 @@ import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.nio.charset.Charset
 
-val debuggerKey = Key.create<PleaseDebugger>("debugger")
+val targetKey = Key.create<BuildTarget>("pleaseTarget")
 
 /**
  * A base interface grouping all the Please run configurations together
@@ -47,6 +44,7 @@ val debuggerKey = Key.create<PleaseDebugger>("debugger")
 interface PleaseRunConfigurationBase : DebuggableRunConfiguration {
 
     fun target() : String
+    fun pleaseRoot() : String?
     fun pleaseArgs(): String
 
     override fun computeDebugAddress(state: RunProfileState?): InetSocketAddress {
@@ -66,8 +64,9 @@ interface PleaseRunConfigurationBase : DebuggableRunConfiguration {
         executionResult: ExecutionResult?,
         environment: ExecutionEnvironment
     ): XDebugProcess {
-        return environment.getUserData(debuggerKey)!!
-            .createDebugProcess(socketAddress, session, executionResult, environment)
+        val target = environment.getUserData(targetKey)!!
+        val debugger = PleaseDebugState.runStateProviderEP.extensionList.firstOrNull { it.canRun(target) } ?: throw RuntimeException("No debuggers for $target")
+        return debugger.createDebugProcess(socketAddress, session, executionResult, environment)
     }
 }
 
@@ -91,36 +90,25 @@ interface PleaseDebugger {
 }
 
 class PleaseDebugState(val config: PleaseRunConfigurationBase, val environment: ExecutionEnvironment, val address: InetSocketAddress) : DebuggableRunProfileState {
-    private fun startForPleaseRun(config: PleaseRunConfiguration): ProcessHandler {
-        val plzArgs = Commandline.translateCommandline(config.pleaseArgs()).toList()
-        val cmd = GeneralCommandLine(Please(config.project, pleaseArgs = plzArgs).debug(
-            config.target(),
-            address.port,
-            Commandline.translateCommandline(config.args.programArgs).toList()
-        ))
-        //TODO(jpoole): this should use the files project root
-        cmd.setWorkDirectory(config.project.basePath!!)
-        return PleaseProcessHandler(cmd)
-    }
-
-    private fun startForPleaseTest(config: PleaseTestConfiguration): ProcessHandler {
-        val plzArgs = Commandline.translateCommandline(config.pleaseArgs()).toList()
-        val cmd = GeneralCommandLine(Please(config.project, pleaseArgs = plzArgs).debug(
-            config.target(),
-            address.port,
-            Commandline.translateCommandline(config.args.tests).toList()
-        ))
-        //TODO(jpoole): this should use the files project root
-        cmd.setWorkDirectory(config.project.basePath!!)
-        return PleaseProcessHandler(cmd)
-    }
-
     private fun startProcess() : ProcessHandler {
-        if(config is PleaseRunConfiguration) {
-            return startForPleaseRun(config)
+        val plzArgs = Commandline.translateCommandline(config.pleaseArgs()).toList()
+        val cmd = if(config is PleaseRunConfiguration) {
+            GeneralCommandLine(Please(config.project, pleaseArgs = plzArgs).debug(
+                config.target(),
+                address.port,
+                Commandline.translateCommandline(config.args.programArgs).toList()
+            ))
+        } else {
+            GeneralCommandLine(Please(config.project, pleaseArgs = plzArgs).debug(
+                config.target(),
+                address.port,
+                Commandline.translateCommandline((config as PleaseTestConfiguration).args.tests).toList()
+            ))
         }
+        val target = environment.getUserData(targetKey)!!
+        cmd.setWorkDirectory(target.pkg.pleaseRoot)
 
-        return startForPleaseTest(config as PleaseTestConfiguration)
+        return PleaseProcessHandler(cmd)
     }
 
     private fun execute() : ExecutionResult {
@@ -142,19 +130,22 @@ class PleaseDebugState(val config: PleaseRunConfigurationBase, val environment: 
             }
 
             override fun run(indicator: ProgressIndicator) {
-                // TODO(jpoole): We should probably have some sort of repo root in the run config
-                val t = ApplicationManager.getApplication().runReadAction(Computable {
-                    val l = parseLabel(config.target())
-                    PackageService.resolvePackage(project, l.pkg).firstOrNull()?.targetByName(l.name)
-                }) ?: throw RuntimeException("Can't find target ${config.target()}")
+                val label = parseLabel(config.target())
+                val pkg = ApplicationManager.getApplication().runReadAction(Computable {
+                    if (config.pleaseRoot() != null){
+                        PackageService.resolvePackage(project, config.pleaseRoot()!!, label.pkg)
+                    } else {
+                        PackageService.resolvePackage(project, label.pkg).firstOrNull()
+                    }
+                })
+                val target = pkg?.targetByName(label.name) ?: throw RuntimeException("Can't find target ${config.target()}")
 
-                val debugger = runStateProviderEP.extensionList.firstOrNull { it.canRun(t) } ?: throw RuntimeException("No debuggers for ${config.target()}")
-                environment.putUserData(debuggerKey, debugger)
+                environment.putUserData(targetKey, target)
 
                 val plzArgs = Commandline.translateCommandline(config.pleaseArgs()).toList()
                 val cmd = GeneralCommandLine(Please(this.project, pleaseArgs = plzArgs).build(config.target()))
 
-                cmd.setWorkDirectory(project.basePath!!)
+                cmd.setWorkDirectory(target.pkg.pleaseRoot)
                 cmd.isRedirectErrorStream = true
 
                 val process = ProcessHandlerFactoryImpl.getInstance().createColoredProcessHandler(cmd)
@@ -179,7 +170,7 @@ class PleaseDebugState(val config: PleaseRunConfigurationBase, val environment: 
     }
 
     companion object {
-        private val runStateProviderEP = ExtensionPointName.create<PleaseDebugger>("net.thoughtmachine.please.plugin.pleaseDebugger")
+        val runStateProviderEP = ExtensionPointName.create<PleaseDebugger>("net.thoughtmachine.please.plugin.pleaseDebugger")
     }
 }
 

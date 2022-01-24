@@ -18,6 +18,7 @@ import javax.swing.JPanel
 data class PleaseBuildConfigArgs(
     var target: String,
     var pleaseArgs: String = "",
+    var pleaseRoot: String = "",
 )
 
 class PleaseBuildConfigurationType : ConfigurationTypeBase("PleaseBuildConfigurationType", "plz build", "Build a build target in a please project", PLEASE_ICON) {
@@ -39,23 +40,27 @@ class PleaseBuildConfigurationType : ConfigurationTypeBase("PleaseBuildConfigura
 class PleaseBuildConfigurationSettings : SettingsEditor<PleaseBuildConfiguration>() {
     private val target = JBTextField("//some:target")
     private val pleaseArgs = JBTextField()
+    private val pleaseRoot = JBTextField()
 
 
     override fun createEditor(): JComponent {
         return FormBuilder.createFormBuilder()
             .addLabeledComponent(JBLabel("Target: "), target, 1, false)
-            .addLabeledComponent(JBLabel("Please args: "), pleaseArgs, 3, false)
+            .addLabeledComponent(JBLabel("Please args: "), pleaseArgs, 2, false)
+            .addLabeledComponent(JBLabel("Please project root: "), pleaseRoot, 3, false)
             .addComponentFillVertically(JPanel(), 0).panel
     }
 
     override fun applyEditorTo(s: PleaseBuildConfiguration) {
         s.args.target = target.text
         s.args.pleaseArgs = pleaseArgs.text
+        s.args.pleaseRoot = pleaseRoot.text
     }
 
     override fun resetEditorFrom(s: PleaseBuildConfiguration) {
         target.text = s.args.target
         pleaseArgs.text = s.args.pleaseArgs
+        pleaseRoot.text = s.args.pleaseRoot
     }
 }
 
@@ -72,24 +77,26 @@ class PleaseBuildConfiguration(
     }
 
     override fun getState(executor: Executor, environment: ExecutionEnvironment): RunProfileState {
-        return getBuildProfileState(project, args.target, Commandline.translateCommandline(args.pleaseArgs).toList())
+        return getBuildProfileState(project, args.pleaseRoot, args.target, Commandline.translateCommandline(args.pleaseArgs).toList())
     }
 
     companion object {
-        fun getBuildProfileState(project: Project, target: String, pleaseArgs: List<String>): PleaseProfileState {
-            return PleaseProfileState(project, Please(project, pleaseArgs = pleaseArgs).build(target))
+        fun getBuildProfileState(project: Project, pleaseRoot: String?, target: String, pleaseArgs: List<String>): PleaseProfileState {
+            return PleaseProfileState(project, pleaseRoot, Please(project, pleaseArgs = pleaseArgs).build(target))
         }
     }
 
     override fun writeExternal(element: Element) {
         element.setAttribute("target", args.target)
+        element.setAttribute("pleaseRoot", args.pleaseRoot)
         element.setAttribute("pleaseArgs", args.pleaseArgs)
     }
 
     override fun readExternal(element: Element) {
         args = PleaseBuildConfigArgs(
             target = element.getAttributeValue("target") ?: "//some:target",
-            pleaseArgs = element.getAttributeValue("pleaseArgs") ?: ""
+            pleaseArgs = element.getAttributeValue("pleaseArgs") ?: "",
+            pleaseRoot = element.getAttributeValue("pleaseRoot") ?: ""
         )
     }
 }

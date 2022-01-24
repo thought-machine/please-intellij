@@ -30,8 +30,17 @@ fun parseLabel(l: String) : BuildLabel {
     return BuildLabel(name, pkg, subrepo)
 }
 
+/**
+ * TargetInfo contains information about the target from the build system
+ */
+data class TargetInfo(
+    val name: String,
+    val binary: Boolean,
+    val test: Boolean,
+    val labels: List<String> = emptyList()
+)
 
-data class BuildTarget(val label: BuildLabel, val binary: Boolean, val test: Boolean, val kind: String, val labels: List<String>) {
+data class BuildTarget(val label: BuildLabel, val pkg: Package, val info: TargetInfo?, val kind: String) {
     override fun toString(): String {
         return label.toString()
     }
@@ -46,7 +55,10 @@ data class PackageLabel(val pkg: String, val subrepo: String? = null) {
     }
 }
 
-data class Package(val pleaseRoot : String, val pkg: PackageLabel, val targets: Map<String, BuildTarget>) {
+data class Package(val pleaseRoot : String, val pkg: PackageLabel, val targets: MutableMap<String, BuildTarget> = mutableMapOf()) {
+    fun addTarget(t: BuildTarget) {
+        targets[t.toString()] = t
+    }
     fun targetByName(name: String) : BuildTarget? {
         return targets[BuildLabel(name, pkg.pkg, pkg.subrepo).toString()]
     }

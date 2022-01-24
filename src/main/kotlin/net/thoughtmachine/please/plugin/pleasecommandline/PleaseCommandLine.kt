@@ -57,7 +57,7 @@ class Please(
         return args
     }
     fun args() : List<String> {
-        val plz = "/Users/jpoole/please/plz-out/bin/src/please" // PleaseProjectConfigurable.getPleasePath(project)
+        val plz = PleaseProjectConfigurable.getPleasePath(project)
         val args = mutableListOf(plz, "-c", config)
         if(plainOutput) {
             args.addAll(listOf("-p", "-v", "warning"))
