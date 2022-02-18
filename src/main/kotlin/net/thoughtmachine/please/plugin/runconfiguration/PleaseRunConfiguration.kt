@@ -54,7 +54,7 @@ class PleaseRunConfigurationSettings : SettingsEditor<PleaseRunConfiguration>() 
             .addLabeledComponent(JBLabel("Program args: "), programArgs, 2, false)
             .addLabeledComponent(JBLabel("Please args: "), pleaseArgs, 3, false)
             .addLabeledComponent(JBLabel("Working dir: "), workingDir, 4, false)
-            .addLabeledComponent(JBLabel("Plese project root: "), pleaseRoot, 4, false)
+            .addLabeledComponent(JBLabel("Please project root: "), pleaseRoot, 4, false)
             .addComponentFillVertically(JPanel(), 0).panel
     }
 
