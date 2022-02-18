@@ -6,11 +6,13 @@ import com.intellij.model.Symbol
 import com.intellij.model.psi.*
 import com.intellij.model.search.SearchRequest
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.psi.PsiElement
 import com.intellij.psi.util.PsiUtilCore
 import com.jetbrains.python.psi.PyStringLiteralExpression
+import com.jetbrains.python.statistics.modules
 import net.thoughtmachine.please.plugin.PleaseBuildFileType
 import net.thoughtmachine.please.plugin.PleaseFile
 import java.nio.file.Path
@@ -49,8 +51,8 @@ class BuildLabelReferenceProvider : PsiSymbolReferenceProvider {
             }
             text.startsWith("//") -> {
                 val packagePath = text.removePrefix("//").substringBefore(":")
-                val pleaseRoot = file.getProjectRoot() ?: return emptyList()
-                val pleaseFile = findBuildFile(file.project, pleaseRoot, packagePath) ?: return emptyList()
+
+                val pleaseFile = file.find(packagePath) ?: return emptyList()
 
                 val name = if (text.contains(":")) text.substringAfter(":") else text.substringAfterLast("/")
 
@@ -77,14 +79,6 @@ class BuildLabelReferenceProvider : PsiSymbolReferenceProvider {
     // We might be able to do something nice with "search everywhere" if we implement this though it's rather unclear
     // how it's meant to be hooked up. See SearchableSymbol for more information.
     override fun getSearchRequests(project: Project, target: Symbol) = emptyList<SearchRequest>()
-}
-
-fun findBuildFile(project: Project, projectRoot : Path, pkgName : String) : PleaseFile? {
-    val virtFile = VfsUtil.findFile(Paths.get(projectRoot.toString(), pkgName), false)?.children
-        ?.firstOrNull { it.fileType == PleaseBuildFileType } ?: return null
-
-    val psiFile = PsiUtilCore.getPsiFile(project, virtFile)
-    return if(psiFile is PleaseFile) psiFile else null
 }
 
 class BuildLabelSymbolReference(private val label: PyStringLiteralExpression, private val pyCallSymbol: Symbol) :

@@ -119,7 +119,7 @@ object PleaseGoLineMarkerProvider : RunLineMarkerContributor() {
         val pleaseRoot = findPleaseRoot(file.virtualFile) ?: return null
         val path = pleaseRoot.toNioPath().relativize(file.virtualFile.toNioPath())
 
-        val cmd = GeneralCommandLine(Please(file.project).query("whatinputs", arrayOf(path.toString())))
+        val cmd = GeneralCommandLine(Please(file.project).query("whatinputs", path.toString()))
         cmd.workDirectory = file.project.guessProjectDir()!!.toNioPath().toFile()
         cmd.withRedirectErrorStream(true)
 

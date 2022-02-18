@@ -14,6 +14,7 @@ import com.intellij.execution.ui.ConsoleView
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.project.Project
 import com.intellij.terminal.TerminalExecutionConsole
+import com.intellij.util.SlowOperations
 import com.intellij.util.io.BaseDataReader.SleepingPolicy
 import com.intellij.util.io.BaseOutputReader
 import net.thoughtmachine.please.plugin.pleasecommandline.PleaseCommand
@@ -39,11 +40,12 @@ fun (Project).createConsole(processHandler: ProcessHandler): ConsoleView {
 
 class PleaseProfileState(
     private var project: Project,
+    private var pleaseRoot: String?,
     private var pleaseCommand: PleaseCommand
 ) : RunProfileState {
     private fun startProcess(): ProcessHandler {
         val cmd = PtyCommandLine(pleaseCommand)
-        cmd.setWorkDirectory(project.basePath!!)
+        cmd.setWorkDirectory(pleaseRoot ?: project.basePath!!)
 
         return PleaseProcessHandler(cmd)
     }

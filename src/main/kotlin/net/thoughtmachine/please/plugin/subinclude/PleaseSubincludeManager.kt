@@ -5,6 +5,9 @@ import com.intellij.execution.process.ProcessHandlerFactory
 import com.intellij.notification.Notification
 import com.intellij.notification.NotificationType
 import com.intellij.notification.Notifications
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.readAction
+import com.intellij.openapi.util.Computable
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.newvfs.BulkFileListener
@@ -30,17 +33,17 @@ object PleaseSubincludeManager {
             resolvedSubincludes.remove(subinclude)
         }
 
-        val projectRoot = fromFile.getProjectRoot() ?: return emptySet()
+        val pkg = ApplicationManager.getApplication().runReadAction(Computable { fromFile.getPleasePackage() }) ?: return setOf()
 
         val cmd = GeneralCommandLine("plz query outputs $subinclude".split(" "))
-        cmd.workDirectory = projectRoot.toFile()
+        cmd.setWorkDirectory(fromFile.virtualFile.parent.path)
 
         val process = ProcessHandlerFactory.getInstance().createProcessHandler(cmd)
 
         if(process.process.waitFor() == 0) {
             val files = process.process.inputStream.bufferedReader().lines()
                 .map (::resolveFilegroup)
-                .map { VfsUtil.findFile(Paths.get(projectRoot.toString(), it), true) }
+                .map { VfsUtil.findFile(Paths.get(pkg.pleaseRoot, it), true) }
                 .collect(Collectors.toSet()).filterNotNull().toSet()
 
             resolvedSubincludes[subinclude] = files

@@ -6,10 +6,12 @@ import com.intellij.execution.process.ProcessHandlerFactory
 import com.intellij.notification.Notification
 import com.intellij.notification.NotificationType
 import com.intellij.notification.Notifications
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Computable
 import com.intellij.psi.PsiElementVisitor
 import com.intellij.util.castSafelyTo
 import com.jetbrains.python.psi.PyCallExpression
@@ -78,7 +80,6 @@ class ResolveSubincludeBackgroundTask(private var file: PleaseFile, private var 
             return
         }
 
-        val projectRoot = file.getProjectRoot() ?: return
 
         indicator.text = "Updating subincludes"
         indicator.text2 = "plz build ${includes.joinToString(" ")}"
@@ -88,7 +89,7 @@ class ResolveSubincludeBackgroundTask(private var file: PleaseFile, private var 
         val cmd = GeneralCommandLine(*args)
         cmd.isRedirectErrorStream = true
 
-        cmd.workDirectory = projectRoot.toFile()
+        cmd.setWorkDirectory(file.virtualFile.parent.path)
         val process = ProcessHandlerFactory.getInstance().createProcessHandler(cmd)
 
         if(process.process.waitFor() == 0) {

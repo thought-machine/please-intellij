@@ -4,6 +4,6 @@
                                    implementationClass="net.thoughtmachine.please.plugin.runconfiguration.go.PleaseGoLineMarkerProvider"/>
     </extensions>
     <extensions defaultExtensionNs="net.thoughtmachine.please.plugin">
-        <pleaseDebugRunStateProvider implementation="net.thoughtmachine.please.plugin.runconfiguration.go.GoStateProvider"/>
+        <pleaseDebugger implementation="net.thoughtmachine.please.plugin.runconfiguration.go.GoDebugger"/>
     </extensions>
 </idea-plugin>

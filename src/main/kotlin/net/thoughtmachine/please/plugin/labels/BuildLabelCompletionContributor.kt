@@ -11,7 +11,8 @@ import com.intellij.patterns.PlatformPatterns
 import com.intellij.util.ProcessingContext
 import com.jetbrains.python.psi.PyStringLiteralExpression
 import net.thoughtmachine.please.plugin.PleaseFile
-import net.thoughtmachine.please.plugin.Target
+import net.thoughtmachine.please.plugin.PsiTarget
+import java.nio.file.Path
 import java.util.stream.Collectors
 
 class BuildLabelCompletionContributor : CompletionContributor() {
@@ -42,16 +43,15 @@ class BuildLabelCompletionProvider : CompletionProvider<CompletionParameters>() 
     }
 
     private fun results(stringText: String, file: PleaseFile): List<String> {
-        // If we're editing the file, chances are it wont parse so we can't use please for completions
+        // If we're editing the file, chances are it won't parse so we can't use please for completions
         if (stringText.startsWith(":")) {
             return targetsForFile(file, stringText.substring(1, stringText.length))
                 .map { it.name }
         }
 
-        val projectRoot = file.getProjectRoot() ?: return emptyList()
-
+        // TODO(jpoole): this should probably use the index 
         val cmd = GeneralCommandLine("plz query completions $stringText".split(" "))
-        cmd.workDirectory = projectRoot.toFile()
+        cmd.withWorkDirectory(file.virtualFile.parent.path)
 
         val process = ProcessHandlerFactory.getInstance().createProcessHandler(cmd)
 
@@ -67,7 +67,7 @@ class BuildLabelCompletionProvider : CompletionProvider<CompletionParameters>() 
         }
     }
 
-    private fun targetsForFile(file: PleaseFile, prefix: String): List<Target> {
+    private fun targetsForFile(file: PleaseFile, prefix: String): List<PsiTarget> {
         return file.targets().filter { it.name.startsWith(prefix) }
     }
 

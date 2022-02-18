@@ -3,16 +3,31 @@ package net.thoughtmachine.please.plugin
 import com.intellij.lang.Language
 import com.intellij.openapi.fileTypes.FileType
 import com.intellij.openapi.fileTypes.LanguageFileType
+import com.intellij.openapi.module.ModuleManager
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.util.IconLoader
+import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.psi.FileViewProvider
+import com.intellij.psi.PsiElement
+import com.intellij.psi.util.PsiUtilCore
 import com.intellij.util.castSafelyTo
+import com.intellij.util.indexing.FileBasedIndex
 import com.jetbrains.python.inspections.PyInspectionExtension
 import com.jetbrains.python.psi.PyCallExpression
 import com.jetbrains.python.psi.PyFile
 import com.jetbrains.python.psi.PyRecursiveElementVisitor
 import com.jetbrains.python.psi.PyStringLiteralExpression
 import com.jetbrains.python.psi.impl.PyFileImpl
+import com.jetbrains.python.statistics.modules
+import com.jetbrains.rd.util.firstOrNull
+import net.thoughtmachine.please.plugin.graph.Package
+import net.thoughtmachine.please.plugin.graph.PackageIndexExtension
+import net.thoughtmachine.please.plugin.graph.PackageIndexer
+import net.thoughtmachine.please.plugin.graph.PackageService
+import net.thoughtmachine.please.plugin.pleasecommandline.Please
 import java.nio.file.Path
+import java.nio.file.Paths
 import javax.swing.Icon
 
 
@@ -20,6 +35,7 @@ val PLEASE_ICON = IconLoader.getIcon("/icons/please.png", PleaseBuildFileType.ja
 object PleaseLanguage : Language("Please")
 
 abstract class PleaseFileType : LanguageFileType(PleaseLanguage)
+
 
 object PleaseBuildFileType : PleaseFileType() {
     override fun getIcon() = PLEASE_ICON
@@ -31,7 +47,7 @@ object PleaseBuildFileType : PleaseFileType() {
     override fun getDescription() = "Please BUILD file"
 
     override fun getDisplayName(): String {
-        return "PleaseBuild"
+        return "BUILD"
     }
 }
 
@@ -45,14 +61,11 @@ object PleaseBuildDefFileType : PleaseFileType() {
     override fun getDescription() = "Please build definition file"
 
     override fun getDisplayName(): String {
-        return "PleaseDefs"
+        return ".build_defs"
     }
 }
 
 class PleaseFile(viewProvider: FileViewProvider, private var type : PleaseFileType) : PyFileImpl(viewProvider, PleaseLanguage) {
-    var locatedRepoRoot = false
-    private var pkg : String? = null
-    private var repo : Path? = null
     private var subincludes : MutableSet<String>? = null
 
     override fun getFileType(): FileType {
@@ -70,54 +83,20 @@ class PleaseFile(viewProvider: FileViewProvider, private var type : PleaseFileTy
     /**
      * Gets the Please package name for the File by walking up the file tree to find the .plzconfig.
      */
-    fun getPleasePackage() : String? {
+    fun getPleasePackage() : Package? {
         // Build definitions file don't belong to a package.
         if (type == PleaseBuildDefFileType) {
             return null
         }
 
-        locatePleaseRepo()
-        return pkg
+        val (root, pkg) = PackageIndexer.forFile(this) ?: return null
+        return PackageService.resolvePackage(project, root, pkg)
     }
 
-    fun getProjectRoot() : Path? {
-        locatePleaseRepo()
-        return repo
-    }
-
-    private fun locatePleaseRepo() {
-        // TODO(jpoole): move build defs out into their own file type
-        if (locatedRepoRoot) {
-            return
-        }
-        var dir = Path.of(virtualFile.path).parent
-        val path = mutableListOf<String>()
-        while(true) {
-            if(dir == null){
-                return
-            }
-
-            val dirFile = dir.toFile()
-            if (dir.toFile().list()?.find { it == ".plzconfig" } != null) {
-                pkg = path.joinToString("/")
-                repo = dir.toAbsolutePath()
-                locatedRepoRoot = true
-                return
-            } else {
-                path.add(0, dirFile.name)
-                dir = dir.parent
-            }
-        }
-    }
-
-    fun targets() : List<Target> {
-        val pkg = getPleasePackage()
-        if(pkg != null) {
-            val visitor = TargetVisitor(pkg)
-            accept(visitor)
-            return visitor.targets
-        }
-        return listOf()
+    fun targets() : List<PsiTarget> {
+        val visitor = TargetVisitor()
+        accept(visitor)
+        return visitor.targets
     }
 
     fun getSubincludes() : Set<String> {
@@ -147,28 +126,44 @@ class PleaseFile(viewProvider: FileViewProvider, private var type : PleaseFileTy
                 }
         }
     }
+
+    /**
+     * find is a convenience function to find a BUILD file for a package in the same Please repo as this file
+     */
+    fun find(pkgName : String) : PleaseFile? {
+        val projectRoot = getPleasePackage()?.pleaseRoot ?: return null
+
+        return PackageIndexer.lookup(project, projectRoot, pkgName)
+    }
 }
 
-fun (PyCallExpression).asTarget(pkgName: String) : Target? {
+fun (PyCallExpression).asTarget(): PsiTarget? {
     val nameArg = argumentList?.getKeywordArgument("name")?.valueExpression
     if(nameArg != null && nameArg is PyStringLiteralExpression) {
-        return Target("//$pkgName:${nameArg.stringValue}", nameArg.stringValue, this)
+        return PsiTarget( nameArg.stringValue, this)
     }
     return null
 }
 
-private class TargetVisitor(private val pkgName : String) : PyRecursiveElementVisitor() {
-    val targets = mutableListOf<Target>()
+private class TargetVisitor : PyRecursiveElementVisitor() {
+    val targets = mutableListOf<PsiTarget>()
 
     override fun visitPyCallExpression(node: PyCallExpression) {
-        val target = node.asTarget(pkgName)
+        val target = node.asTarget()
         if (target != null) {
             targets.add(target)
         }
     }
 }
 
-data class Target(val label : String, val name : String, val element: PyCallExpression)
+/**
+ * PsiTarget is a build target from an AST perspective.
+ */
+data class PsiTarget(val name : String, val element: PyCallExpression) : PsiElement by element {
+    fun kind() : String {
+        return element.callee?.text ?: ""
+    }
+}
 
 class PleasePythonInspections : PyInspectionExtension() {
     override fun ignoreInterpreterWarnings(file: PyFile): Boolean {

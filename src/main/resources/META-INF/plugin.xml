@@ -51,6 +51,8 @@
         <configurationType implementation="net.thoughtmachine.please.plugin.runconfiguration.PleaseRunConfigurationType"/>
         <configurationType implementation="net.thoughtmachine.please.plugin.runconfiguration.PleaseTestConfigurationType"/>
         <configurationType implementation="net.thoughtmachine.please.plugin.runconfiguration.PleaseBuildConfigurationType"/>
+        <!-- Indexes -->
+        <fileBasedIndex implementation="net.thoughtmachine.please.plugin.graph.PackageIndexExtension" />
     </extensions>
 
     <extensions defaultExtensionNs="Pythonid">
@@ -66,8 +68,8 @@
     </extensions>
 
     <extensionPoints>
-        <extensionPoint name="pleaseDebugRunStateProvider"
-                        interface="net.thoughtmachine.please.plugin.runconfiguration.PleaseDebugRunStateProvider"/>
+        <extensionPoint name="pleaseDebugger"
+                        interface="net.thoughtmachine.please.plugin.runconfiguration.PleaseDebugger"/>
     </extensionPoints>
 
     <change-notes><![CDATA[
