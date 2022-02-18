@@ -73,6 +73,8 @@
     </extensionPoints>
 
     <change-notes><![CDATA[
+        <h2>v2.1.0,/h2>
+        <p>Added file index to obtain more information about targets so we only offer relevant actions in gutter icons
         <h2>v2.0.1</h2>
         <p>Fix class not found when resolving references
         <h2>v2.0.0</h2>
