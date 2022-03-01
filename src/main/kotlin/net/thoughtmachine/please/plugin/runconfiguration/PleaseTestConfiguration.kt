@@ -1,6 +1,7 @@
 package net.thoughtmachine.please.plugin.runconfiguration
 
 import com.intellij.execution.Executor
+import com.intellij.execution.actions.ConfigurationContext
 import com.intellij.execution.configurations.*
 import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.execution.runners.ExecutionEnvironment
@@ -10,6 +11,7 @@ import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTextField
 import com.intellij.util.ui.FormBuilder
 import net.thoughtmachine.please.plugin.PLEASE_ICON
+import net.thoughtmachine.please.plugin.graph.BuildTarget
 import net.thoughtmachine.please.plugin.pleasecommandline.Please
 import org.apache.tools.ant.types.Commandline
 import org.jdom.Element
@@ -23,7 +25,7 @@ data class PleaseTestConfigArgs(
     var tests: String = ""
 )
 
-class PleaseTestConfigurationType : ConfigurationTypeBase("PleaseTestConfigurationType", "plz test", "Test a build target in a please project", PLEASE_ICON) {
+object PleaseTestConfigurationType : ConfigurationTypeBase("PleaseTestConfigurationType", "plz test", "Test a build target in a please project", PLEASE_ICON) {
     class Factory(type : PleaseTestConfigurationType) : ConfigurationFactory(type) {
         override fun createTemplateConfiguration(project: Project): RunConfiguration {
             return PleaseTestConfiguration(project, this, PleaseTestConfigArgs("//some:target"))
@@ -113,5 +115,31 @@ class PleaseTestConfiguration(
             pleaseArgs = element.getAttributeValue("pleaseArgs") ?: "",
             tests = element.getAttributeValue("tests") ?: "",
         )
+    }
+}
+
+object PleaseTestRunConfigurationProducer: PleaseRunConfigurationProducerBase<PleaseTestConfiguration>() {
+
+    override fun getConfigurationFactory(): ConfigurationFactory {
+        return PleaseTestConfigurationType.configurationFactories[0]
+    }
+
+    override fun setupConfigurationFromTarget(target: BuildTarget, configuration: PleaseTestConfiguration): Boolean {
+        val isTest = target.info?.test ?: false
+        if(!isTest) {
+            return false
+        }
+
+        configuration.args.target = target.label.toString()
+        configuration.args.pleaseRoot = target.pkg.pleaseRoot
+        configuration.name = "test :${target.label.name}"
+        return true
+    }
+
+    override fun isConfigurationFromContext(
+        configuration: PleaseTestConfiguration,
+        context: ConfigurationContext
+    ): Boolean {
+        return super.isConfigurationFromContext(configuration, context) && configuration.args.tests == ""
     }
 }

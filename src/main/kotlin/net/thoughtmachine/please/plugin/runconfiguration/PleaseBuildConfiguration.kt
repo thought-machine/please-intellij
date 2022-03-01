@@ -9,6 +9,7 @@ import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTextField
 import com.intellij.util.ui.FormBuilder
 import net.thoughtmachine.please.plugin.PLEASE_ICON
+import net.thoughtmachine.please.plugin.graph.BuildTarget
 import net.thoughtmachine.please.plugin.pleasecommandline.Please
 import org.apache.tools.ant.types.Commandline
 import org.jdom.Element
@@ -21,7 +22,7 @@ data class PleaseBuildConfigArgs(
     var pleaseRoot: String = "",
 )
 
-class PleaseBuildConfigurationType : ConfigurationTypeBase("PleaseBuildConfigurationType", "plz build", "Build a build target in a please project", PLEASE_ICON) {
+object PleaseBuildConfigurationType : ConfigurationTypeBase("PleaseBuildConfigurationType", "plz build", "Build a build target in a please project", PLEASE_ICON) {
     class Factory(type : PleaseBuildConfigurationType) : ConfigurationFactory(type) {
         override fun createTemplateConfiguration(project: Project): RunConfiguration {
             return PleaseBuildConfiguration(project, this, PleaseBuildConfigArgs("//some:target"))
@@ -71,9 +72,21 @@ class PleaseBuildConfiguration(
     project: Project,
     factory: ConfigurationFactory,
     var args: PleaseBuildConfigArgs
-) : LocatableConfigurationBase<RunProfileState>(project, factory, "plz build") {
+) : LocatableConfigurationBase<RunProfileState>(project, factory, "plz build"), PleaseRunConfigurationBase {
     override fun getConfigurationEditor(): SettingsEditor<out RunConfiguration> {
         return PleaseBuildConfigurationSettings()
+    }
+
+    override fun target(): String {
+        return args.target
+    }
+
+    override fun pleaseRoot(): String {
+        return args.pleaseRoot
+    }
+
+    override fun pleaseArgs(): String {
+        return args.pleaseArgs
     }
 
     override fun getState(executor: Executor, environment: ExecutionEnvironment): RunProfileState {
@@ -98,5 +111,27 @@ class PleaseBuildConfiguration(
             pleaseArgs = element.getAttributeValue("pleaseArgs") ?: "",
             pleaseRoot = element.getAttributeValue("pleaseRoot") ?: ""
         )
+    }
+}
+
+object PleaseBuildRunConfigurationProducer: PleaseRunConfigurationProducerBase<PleaseBuildConfiguration>() {
+
+    override fun getConfigurationFactory(): ConfigurationFactory {
+        return PleaseBuildConfigurationType.configurationFactories[0]
+    }
+
+    override fun setupConfigurationFromTarget(target: BuildTarget, configuration: PleaseBuildConfiguration): Boolean {
+        val info = target.info ?: return false
+        if(info.test) {
+            return false
+        }
+        if(info.binary) {
+            return false
+        }
+
+        configuration.args.target = target.label.toString()
+        configuration.args.pleaseRoot = target.pkg.pleaseRoot
+        configuration.name = "build :${target.label.name}"
+        return true
     }
 }

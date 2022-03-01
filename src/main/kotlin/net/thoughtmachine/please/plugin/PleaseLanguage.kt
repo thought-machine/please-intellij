@@ -6,7 +6,9 @@ import com.intellij.openapi.fileTypes.LanguageFileType
 import com.intellij.openapi.util.IconLoader
 import com.intellij.psi.FileViewProvider
 import com.intellij.psi.PsiElement
+import com.intellij.psi.impl.source.tree.LeafPsiElement
 import com.intellij.util.castSafelyTo
+import com.jetbrains.python.PyTokenTypes
 import com.jetbrains.python.inspections.PyInspectionExtension
 import com.jetbrains.python.psi.PyCallExpression
 import com.jetbrains.python.psi.PyFile
@@ -85,6 +87,23 @@ class PleaseFile(viewProvider: FileViewProvider, private var type : PleaseFileTy
         val visitor = TargetVisitor()
         accept(visitor)
         return visitor.targets
+    }
+
+    fun targetForIdent(element: PsiElement) : PsiTarget? {
+        if(element !is LeafPsiElement) {
+            return null
+        }
+
+        if(element.elementType != PyTokenTypes.IDENTIFIER) {
+            return null
+        }
+
+        val callExpr = element.parent.parent
+        if (callExpr !is PyCallExpression) {
+            return null
+        }
+
+        return targets().firstOrNull{ it.element == callExpr}
     }
 
     fun getSubincludes() : Set<String> {
