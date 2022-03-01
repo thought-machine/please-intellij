@@ -51,6 +51,9 @@
         <configurationType implementation="net.thoughtmachine.please.plugin.runconfiguration.PleaseRunConfigurationType"/>
         <configurationType implementation="net.thoughtmachine.please.plugin.runconfiguration.PleaseTestConfigurationType"/>
         <configurationType implementation="net.thoughtmachine.please.plugin.runconfiguration.PleaseBuildConfigurationType"/>
+        <runConfigurationProducer implementation="net.thoughtmachine.please.plugin.runconfiguration.PleaseTestRunConfigurationProducer"/>
+        <runConfigurationProducer implementation="net.thoughtmachine.please.plugin.runconfiguration.PleaseRunConfigurationProducer"/>
+        <runConfigurationProducer implementation="net.thoughtmachine.please.plugin.runconfiguration.PleaseBuildRunConfigurationProducer"/>
         <!-- Indexes -->
         <fileBasedIndex implementation="net.thoughtmachine.please.plugin.graph.PackageIndexExtension" />
     </extensions>
@@ -73,6 +76,8 @@
     </extensionPoints>
 
     <change-notes><![CDATA[
+        <h2>v2.1.2</h2>
+        <p>Fixed issue where run line markers would get stale
         <h2>v2.1.1</h2>
         <p>Fixed dubbugging source mapping when not using vgo integration
         <p>Fix missing persistence for please repo root on the run configurations

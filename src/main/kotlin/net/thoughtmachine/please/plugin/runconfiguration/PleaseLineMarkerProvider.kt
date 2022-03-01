@@ -1,11 +1,18 @@
 package net.thoughtmachine.please.plugin.runconfiguration
 
+import com.intellij.execution.actions.ConfigurationContext
+import com.intellij.execution.actions.LazyRunConfigurationProducer
+import com.intellij.execution.actions.RunConfigurationProducer
+import com.intellij.execution.configurations.ConfigurationFactory
+import com.intellij.execution.configurations.RunConfiguration
 import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.execution.executors.DefaultRunExecutor
+import com.intellij.execution.lineMarker.ExecutorAction
 import com.intellij.execution.lineMarker.RunLineMarkerContributor
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Ref
 import com.intellij.psi.PsiElement
 import com.intellij.psi.impl.source.tree.LeafPsiElement
 import com.jetbrains.python.PyTokenTypes
@@ -24,19 +31,6 @@ object PleaseLineMarkerProvider : RunLineMarkerContributor() {
     // getInfo needs to apply the run info to the LeafPsiElement as that's what intellij demands. It looks for the
     // IDENT of the function call and applies the run actions to that.
     override fun getInfo(element: PsiElement): Info? {
-        if(element !is LeafPsiElement) {
-            return null
-        }
-
-        if(element.elementType != PyTokenTypes.IDENTIFIER) {
-            return null
-        }
-
-        val callExpr = element.parent.parent
-        if (callExpr !is PyCallExpression) {
-            return null
-        }
-
         val file = element.containingFile
         // Skip build defs as they don't define build rules
         if(file.fileType != PleaseBuildFileType) {
@@ -46,68 +40,12 @@ object PleaseLineMarkerProvider : RunLineMarkerContributor() {
             return null
         }
 
-        val name = callExpr.argumentList?.getKeywordArgument("name")
-        if (name != null) {
-            val pkg = file.getPleasePackage() ?: return null
-            val expr = name.valueExpression
-            if(expr is PyStringLiteralExpression) {
-                val target = pkg.targetByName(expr.stringValue) ?: return null
-                return Info(
-                    AllIcons.Actions.Execute,
-                    filterActions(element.project, target).toTypedArray(),
-                ) { "run $target" }
-            }
-        }
+        val psiTarget = file.targetForIdent(element) ?: return null
 
-        return null
+
+        return Info(
+            AllIcons.Actions.Execute,
+            ExecutorAction.getActions(0),
+        ) { "run :${psiTarget.name}" }
     }
-
-    private fun filterActions(project: Project, target: BuildTarget): List<AnAction> {
-        val label = target.toString()
-        val actions = mutableListOf(PleaseAction(project, label, "build",
-            PleaseBuildExecutor, newBuildConfig(project, target.pkg.pleaseRoot, label)))
-
-        val test = target.info?.test ?: true
-        val binary = target.info?.binary ?: true
-
-        if (test) {
-            actions.addAll(listOf(
-                PleaseAction(project, label, "test",
-                    DefaultRunExecutor.getRunExecutorInstance(), newTestConfig(project, target.pkg.pleaseRoot, label)),
-                PleaseAction(project, label, "test",
-                    DefaultDebugExecutor.getDebugExecutorInstance(), newTestConfig(project, target.pkg.pleaseRoot, label)),
-            ))
-        }
-        // Include these options if we don't have any information about the target. This seems more useful. If it's not
-        // a test or binary, Please will give a decent error message anyway.
-        if (binary && !test || target.info == null) {
-            actions.addAll(listOf(
-                PleaseAction(project, label, "run",
-                    DefaultRunExecutor.getRunExecutorInstance(), newRunConfig(project, target.pkg.pleaseRoot, label)),
-                PleaseAction(project, label, "run",
-                    DefaultDebugExecutor.getDebugExecutorInstance(), newRunConfig(project, target.pkg.pleaseRoot, label)),
-            ))
-        }
-
-        return actions
-    }
-
-    private fun newRunConfig(project: Project, pleaseRoot : String, target: String) = PleaseRunConfiguration(
-        project,
-        PleaseRunConfigurationType.Factory(PleaseRunConfigurationType()),
-        PleaseRunConfigArgs(target, pleaseRoot = pleaseRoot)
-    )
-
-    private fun newBuildConfig(project: Project, pleaseRoot : String, target: String) = PleaseBuildConfiguration(
-        project,
-        PleaseBuildConfigurationType.Factory(PleaseBuildConfigurationType()),
-        PleaseBuildConfigArgs(target, pleaseRoot = pleaseRoot)
-    )
-
-    fun newTestConfig(project: Project, pleaseRoot : String, target: String, tests: String = "") = PleaseTestConfiguration(
-        project,
-        PleaseTestConfigurationType.Factory(PleaseTestConfigurationType()),
-        PleaseTestConfigArgs(target, tests = tests, pleaseRoot = pleaseRoot)
-    )
-
 }

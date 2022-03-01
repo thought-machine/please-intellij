@@ -57,20 +57,46 @@ data class BuildTarget(val label: BuildLabel, val pkg: Package, val info: Target
     }
 }
 
-data class PackageLabel(val pkg: String, val subrepo: String? = null) {
+data class PackageLabel(val name: String, val subrepo: String? = null) {
     override fun toString(): String {
         if (subrepo == null) {
-            return "//$pkg:all"
+            return "//$name:all"
         }
-        return "///$subrepo//$pkg"
+        return "///$subrepo//$name"
     }
 }
 
-data class Package(val pleaseRoot : String, val pkg: PackageLabel, val targets: MutableMap<String, BuildTarget> = mutableMapOf()) {
-    fun addTarget(t: BuildTarget) {
-        targets[t.toString()] = t
-    }
+data class Package(val project: Project, val file: PleaseFile, val pleaseRoot : String, val pkgLabel: PackageLabel) {
+
     fun targetByName(name: String) : BuildTarget? {
-        return targets[BuildLabel(name, pkg.pkg, pkg.subrepo).toString()]
+        val psiTarget = file.targets().firstOrNull{it.name == name} ?: return null
+        val info = getTargetInfo(name)
+        return BuildTarget(BuildLabel(name, pkgLabel.name), this, info, psiTarget.kind())
+    }
+
+    // getPackageTargetInfo uses plz query print --json to get some information about the targets in this package.
+    private fun getTargetInfo(name: String): TargetInfo? {
+        try {
+            val label = "//${pkgLabel.name}:$name"
+            val plzCmd = Please(project, true).query("print", "--json", "--omit_hidden", "--field=name", "--field=labels", "--field=test", "--field=binary", label)
+            val cmd = GeneralCommandLine(plzCmd).withWorkDirectory(pleaseRoot)
+            val process = ProcessHandlerFactory.getInstance().createProcessHandler(cmd)
+
+            val exitCode = process.process.waitFor()
+            if (exitCode == 0) {
+                return mapper.readValue<Map<String, TargetInfo>>(process.process.inputStream.readAllBytes())[label]
+            } else {
+                val error = String(process.process.inputStream.readAllBytes())
+                throw RuntimeException("Command `${plzCmd.joinToString(" ")}` failed:\nExit code: $exitCode\n$error")
+            }
+        } catch (e :Exception) {
+            return null
+        }
+    }
+
+    companion object {
+        private val mapper: ObjectMapper = ObjectMapper().registerModule(
+            KotlinModule.Builder().configure(KotlinFeature.NullToEmptyCollection, true).build()
+        ).configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
     }
 }

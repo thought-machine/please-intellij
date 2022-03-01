@@ -10,6 +10,7 @@ import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTextField
 import com.intellij.util.ui.FormBuilder
 import net.thoughtmachine.please.plugin.PLEASE_ICON
+import net.thoughtmachine.please.plugin.graph.BuildTarget
 import net.thoughtmachine.please.plugin.pleasecommandline.Please
 import org.apache.tools.ant.types.Commandline
 import org.jdom.Element
@@ -24,7 +25,7 @@ data class PleaseRunConfigArgs(
     var workingDir: String = ""
 )
 
-class PleaseRunConfigurationType : ConfigurationTypeBase("PleaseRunConfigurationType", "plz run", "Run a build target in a please project", PLEASE_ICON) {
+object PleaseRunConfigurationType : ConfigurationTypeBase("PleaseRunConfigurationType", "plz run", "Run a build target in a please project", PLEASE_ICON) {
     class Factory(type : PleaseRunConfigurationType) : ConfigurationFactory(type) {
         override fun createTemplateConfiguration(project: Project): RunConfiguration {
             return PleaseRunConfiguration(project, this, PleaseRunConfigArgs("//some:target"))
@@ -124,5 +125,27 @@ class PleaseRunConfiguration(
             programArgs = element.getAttributeValue("programArgs") ?: "",
             workingDir = element.getAttributeValue("workingDir") ?: ""
         )
+    }
+}
+
+object PleaseRunConfigurationProducer: PleaseRunConfigurationProducerBase<PleaseRunConfiguration>() {
+
+    override fun getConfigurationFactory(): ConfigurationFactory {
+        return PleaseRunConfigurationType.configurationFactories[0]
+    }
+
+    override fun setupConfigurationFromTarget(target: BuildTarget, configuration: PleaseRunConfiguration): Boolean {
+        val info = target.info ?: return false
+        if(info.test) {
+            return false
+        }
+        if(!info.binary) {
+            return false
+        }
+
+        configuration.args.target = target.label.toString()
+        configuration.args.pleaseRoot = target.pkg.pleaseRoot
+        configuration.name = "run :${target.label.name}"
+        return true
     }
 }

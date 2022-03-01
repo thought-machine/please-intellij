@@ -1,31 +1,40 @@
 package net.thoughtmachine.please.plugin.runconfiguration
 
-import com.intellij.execution.*
+import com.intellij.execution.DefaultExecutionResult
+import com.intellij.execution.ExecutionException
+import com.intellij.execution.ExecutionResult
+import com.intellij.execution.Executor
+import com.intellij.execution.actions.ConfigurationContext
+import com.intellij.execution.actions.LazyRunConfigurationProducer
 import com.intellij.execution.configurations.GeneralCommandLine
-import com.intellij.execution.configurations.RunConfiguration
+import com.intellij.execution.configurations.RunProfile
 import com.intellij.execution.configurations.RunProfileState
-import com.intellij.execution.impl.RunManagerImpl
-import com.intellij.execution.impl.RunnerAndConfigurationSettingsImpl
 import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessHandlerFactoryImpl
 import com.intellij.execution.runners.DebuggableRunProfileState
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.execution.runners.ProgramRunner
-import com.intellij.openapi.actionSystem.AnAction
-import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
-import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.util.Computable
 import com.intellij.openapi.util.Key
+import com.intellij.openapi.util.Ref
+import com.intellij.psi.PsiElement
 import com.intellij.util.net.NetUtils
+import com.intellij.util.ui.EDT
 import com.intellij.xdebugger.XDebugProcess
 import com.intellij.xdebugger.XDebugSession
 import com.intellij.xdebugger.XDebuggerBundle
-import net.thoughtmachine.please.plugin.graph.*
+import net.thoughtmachine.please.plugin.PleaseBuildFileType
+import net.thoughtmachine.please.plugin.PleaseFile
+import net.thoughtmachine.please.plugin.graph.BuildLabel
+import net.thoughtmachine.please.plugin.graph.BuildTarget
+import net.thoughtmachine.please.plugin.graph.PackageService
+import net.thoughtmachine.please.plugin.graph.parseLabel
 import net.thoughtmachine.please.plugin.pleasecommandline.Please
 import org.apache.tools.ant.types.Commandline
 import org.jetbrains.concurrency.AsyncPromise
@@ -65,8 +74,84 @@ interface PleaseRunConfigurationBase : DebuggableRunConfiguration {
         environment: ExecutionEnvironment
     ): XDebugProcess {
         val target = environment.getUserData(targetKey)!!
-        val debugger = PleaseDebugState.runStateProviderEP.extensionList.firstOrNull { it.canRun(target) } ?: throw RuntimeException("No debuggers for $target")
+        val debugger = debugger(target) ?: throw RuntimeException("No debuggers for $target")
         return debugger.createDebugProcess(socketAddress, session, executionResult, environment)
+    }
+
+    override fun canRun(executorId: String, profile: RunProfile): Boolean {
+        if (EDT.isCurrentThreadEdt()) {
+            return true
+        }
+        if (DumbService.isDumb(this.project)) {
+            return false
+        }
+
+        val target = buildTarget()?: return false
+        val info = target.info ?: return false
+        return debugger(target) != null && (info.binary || info.test)
+    }
+
+    fun debugger(target: BuildTarget) : PleaseDebugger? {
+        return PleaseDebugState.runStateProviderEP.extensionList.firstOrNull { it.canRun(target) }
+    }
+
+    fun buildTarget() : BuildTarget? {
+        val label = parseLabel(target())
+        val pkg =
+            if (pleaseRoot() != null){
+                PackageService.resolvePackage(project, pleaseRoot()!!, label.pkg)
+            } else {
+                PackageService.resolvePackage(project, label.pkg).firstOrNull()
+            }
+
+        return pkg?.targetByName(label.name)
+    }
+}
+
+abstract class PleaseRunConfigurationProducerBase<T:PleaseRunConfigurationBase>: LazyRunConfigurationProducer<T>() {
+    fun file(element: PsiElement) : PleaseFile? {
+        val file = element.containingFile
+        // Skip build defs as they don't define build rules
+        if(file.fileType != PleaseBuildFileType) {
+            return null
+        }
+        if(file !is PleaseFile) {
+            return null
+        }
+        return file
+    }
+
+    override fun setupConfigurationFromContext(
+        configuration: T,
+        context: ConfigurationContext,
+        sourceElement: Ref<PsiElement>
+    ): Boolean {
+        if(sourceElement.isNull) {
+            return false
+        }
+        val element = sourceElement.get()
+
+
+        val file = file(element) ?: return false
+        val psiTarget = file.targetForIdent(element) ?: return false
+
+        val pkg = file.getPleasePackage() ?: return false
+        val target = pkg.targetByName(psiTarget.name) ?: return false
+
+        return setupConfigurationFromTarget(target, configuration)
+    }
+
+    abstract fun setupConfigurationFromTarget(target: BuildTarget, configuration: T) : Boolean
+
+    override fun isConfigurationFromContext(
+        configuration: T,
+        context: ConfigurationContext
+    ): Boolean {
+        val element = context.psiLocation ?: return false
+        val file = file(element) ?: return false
+        val target = file.targetForIdent(element) ?: return false
+        val pkg = file.getPleasePackage() ?: return false
+        return configuration.target() == BuildLabel(target.name, pkg.pkgLabel.name).toString()
     }
 }
 
@@ -130,15 +215,7 @@ class PleaseDebugState(val config: PleaseRunConfigurationBase, val environment: 
             }
 
             override fun run(indicator: ProgressIndicator) {
-                val label = parseLabel(config.target())
-                val pkg = ApplicationManager.getApplication().runReadAction(Computable {
-                    if (config.pleaseRoot() != null){
-                        PackageService.resolvePackage(project, config.pleaseRoot()!!, label.pkg)
-                    } else {
-                        PackageService.resolvePackage(project, label.pkg).firstOrNull()
-                    }
-                })
-                val target = pkg?.targetByName(label.name) ?: throw RuntimeException("Can't find target ${config.target()}")
+                val target = ApplicationManager.getApplication().runReadAction(Computable {config.buildTarget()}) ?: throw RuntimeException("Can't find target ${config.target()}")
 
                 environment.putUserData(targetKey, target)
 
@@ -171,27 +248,5 @@ class PleaseDebugState(val config: PleaseRunConfigurationBase, val environment: 
 
     companion object {
         val runStateProviderEP = ExtensionPointName.create<PleaseDebugger>("net.thoughtmachine.please.plugin.pleaseDebugger")
-    }
-}
-
-/**
- * This is the actual action the gutter icons perform which creates and runs a please run configuration for the target.
- */
-class PleaseAction(
-    val project: Project,
-    val target: String,
-    private val command : String,
-    private val executor: Executor,
-    private val config: RunConfiguration
-) :
-    AnAction({"plz $command $target"}, executor.icon) {
-    override fun actionPerformed(e: AnActionEvent) {
-        val mgr = RunManager.getInstance(project) as RunManagerImpl
-        val config = RunnerAndConfigurationSettingsImpl(mgr, config)
-
-        mgr.addConfiguration(config)
-        config.name = "plz $command $target"
-
-        ProgramRunnerUtil.executeConfiguration(config, executor)
     }
 }

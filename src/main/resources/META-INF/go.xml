@@ -1,7 +1,6 @@
 <idea-plugin>
     <extensions defaultExtensionNs="com.intellij">
-        <runLineMarkerContributor  language="go"
-                                   implementationClass="net.thoughtmachine.please.plugin.runconfiguration.go.PleaseGoLineMarkerProvider"/>
+        <runConfigurationProducer implementation="net.thoughtmachine.please.plugin.runconfiguration.go.GoTestConfigProducer"/>
     </extensions>
     <extensions defaultExtensionNs="com.goide">
         <dlv.positionConverterFactory implementation="net.thoughtmachine.please.plugin.runconfiguration.go.PositionConverter" order="first"/>
