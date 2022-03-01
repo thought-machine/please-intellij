@@ -3,31 +3,19 @@ package net.thoughtmachine.please.plugin
 import com.intellij.lang.Language
 import com.intellij.openapi.fileTypes.FileType
 import com.intellij.openapi.fileTypes.LanguageFileType
-import com.intellij.openapi.module.ModuleManager
-import com.intellij.openapi.project.Project
-import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.util.IconLoader
-import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.psi.FileViewProvider
 import com.intellij.psi.PsiElement
-import com.intellij.psi.util.PsiUtilCore
 import com.intellij.util.castSafelyTo
-import com.intellij.util.indexing.FileBasedIndex
 import com.jetbrains.python.inspections.PyInspectionExtension
 import com.jetbrains.python.psi.PyCallExpression
 import com.jetbrains.python.psi.PyFile
 import com.jetbrains.python.psi.PyRecursiveElementVisitor
 import com.jetbrains.python.psi.PyStringLiteralExpression
 import com.jetbrains.python.psi.impl.PyFileImpl
-import com.jetbrains.python.statistics.modules
-import com.jetbrains.rd.util.firstOrNull
 import net.thoughtmachine.please.plugin.graph.Package
-import net.thoughtmachine.please.plugin.graph.PackageIndexExtension
 import net.thoughtmachine.please.plugin.graph.PackageIndexer
 import net.thoughtmachine.please.plugin.graph.PackageService
-import net.thoughtmachine.please.plugin.pleasecommandline.Please
-import java.nio.file.Path
-import java.nio.file.Paths
 import javax.swing.Icon
 
 

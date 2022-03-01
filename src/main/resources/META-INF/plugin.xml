@@ -73,7 +73,11 @@
     </extensionPoints>
 
     <change-notes><![CDATA[
-        <h2>v2.1.0,/h2>
+        <h2>v2.1.1</h2>
+        <p>Fixed dubbugging source mapping when not using vgo integration
+        <p>Fix missing persistence for please repo root on the run configurations
+        <p>Avoid index not ready exceptions for updating subincludes
+        <h2>v2.1.0</h2>
         <p>Added file index to obtain more information about targets so we only offer relevant actions in gutter icons
         <h2>v2.0.1</h2>
         <p>Fix class not found when resolving references

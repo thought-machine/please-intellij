@@ -8,15 +8,12 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
 import com.intellij.psi.impl.source.tree.LeafPsiElement
-import com.intellij.util.indexing.FileBasedIndex
 import com.jetbrains.python.PyTokenTypes
 import com.jetbrains.python.psi.PyCallExpression
 import com.jetbrains.python.psi.PyStringLiteralExpression
-import com.jetbrains.rd.util.firstOrNull
 import net.thoughtmachine.please.plugin.PleaseBuildFileType
 import net.thoughtmachine.please.plugin.PleaseFile
 import net.thoughtmachine.please.plugin.graph.BuildTarget
-import net.thoughtmachine.please.plugin.graph.PackageIndexExtension
 
 
 /**
