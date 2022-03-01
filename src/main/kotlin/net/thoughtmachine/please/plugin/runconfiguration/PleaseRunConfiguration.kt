@@ -111,6 +111,7 @@ class PleaseRunConfiguration(
     override fun writeExternal(element: Element) {
         element.setAttribute("target", args.target)
         element.setAttribute("pleaseArgs", args.pleaseArgs)
+        element.setAttribute("pleaseRoot", args.pleaseRoot)
         element.setAttribute("programArgs", args.programArgs)
         element.setAttribute("workingDir", args.workingDir)
     }

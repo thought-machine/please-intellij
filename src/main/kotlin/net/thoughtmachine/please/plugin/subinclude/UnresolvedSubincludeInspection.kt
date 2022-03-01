@@ -10,6 +10,8 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
+import com.intellij.openapi.project.DumbService
+import com.intellij.openapi.project.IndexNotReadyException
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Computable
 import com.intellij.psi.PsiElementVisitor
@@ -76,30 +78,41 @@ class ResolveSubincludeQuickFix(private val file: PleaseFile, private val includ
 
 class ResolveSubincludeBackgroundTask(private var file: PleaseFile, private var includes: List<String>) : Task.Backgroundable(file.project, "Update subincludes") {
     override fun run(indicator: ProgressIndicator) {
-        if(includes.isEmpty()) {
-            return
-        }
-
-
-        indicator.text = "Updating subincludes"
-        indicator.text2 = "plz build ${includes.joinToString(" ")}"
-
-
-        val args = arrayOf("plz", "build") + includes
-        val cmd = GeneralCommandLine(*args)
-        cmd.isRedirectErrorStream = true
-
-        cmd.setWorkDirectory(file.virtualFile.parent.path)
-        val process = ProcessHandlerFactory.getInstance().createProcessHandler(cmd)
-
-        if(process.process.waitFor() == 0) {
-            includes.forEach{
-                indicator.text2 = "plz query outputs $it"
-                PleaseSubincludeManager.resolveSubinclude(file, it)
+        try {
+            if(includes.isEmpty()) {
+                return
             }
-        } else {
-            val error = String(process.process.inputStream.readAllBytes())
-            Notifications.Bus.notify(Notification("Please", "Failed to update subincludes", error, NotificationType.ERROR))
+
+            if (DumbService.getInstance(project).isDumb) {
+                Notifications.Bus.notify(Notification("Please", "Cannot update subincludes while indexing", NotificationType.ERROR))
+                return
+            }
+
+
+            indicator.text = "Updating subincludes"
+            indicator.text2 = "plz build ${includes.joinToString(" ")}"
+
+
+            val args = arrayOf("plz", "build") + includes
+            val cmd = GeneralCommandLine(*args)
+            cmd.isRedirectErrorStream = true
+
+            cmd.setWorkDirectory(file.virtualFile.parent.path)
+            val process = ProcessHandlerFactory.getInstance().createProcessHandler(cmd)
+
+            if(process.process.waitFor() == 0) {
+                includes.forEach{
+                    indicator.text2 = "plz query outputs $it"
+                    PleaseSubincludeManager.resolveSubinclude(file, it)
+                }
+            } else {
+                val error = String(process.process.inputStream.readAllBytes())
+                Notifications.Bus.notify(Notification("Please", "Failed to update subincludes", error, NotificationType.ERROR))
+            }
+        } catch (_: IndexNotReadyException) {
+            // Ignore this as it's a race condition with the check above which happens occasionally. Re-focusing the
+            // file will re-trigger this though
         }
+
     }
 }

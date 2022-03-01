@@ -3,6 +3,9 @@
         <runLineMarkerContributor  language="go"
                                    implementationClass="net.thoughtmachine.please.plugin.runconfiguration.go.PleaseGoLineMarkerProvider"/>
     </extensions>
+    <extensions defaultExtensionNs="com.goide">
+        <dlv.positionConverterFactory implementation="net.thoughtmachine.please.plugin.runconfiguration.go.PositionConverter" order="first"/>
+    </extensions>
     <extensions defaultExtensionNs="net.thoughtmachine.please.plugin">
         <pleaseDebugger implementation="net.thoughtmachine.please.plugin.runconfiguration.go.GoDebugger"/>
     </extensions>
