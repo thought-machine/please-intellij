@@ -61,8 +61,6 @@ class BuildLabelCompletionProvider : CompletionProvider<CompletionParameters>() 
                 .map { it.removePrefix("//").removePrefix(":") }
                 .collect(Collectors.toList()).take(50)
         } else {
-            val error = String(process.process.inputStream.readAllBytes())
-            Notifications.Bus.notify(Notification("Please", "Failed to complete label", error, NotificationType.ERROR))
             emptyList()
         }
     }
