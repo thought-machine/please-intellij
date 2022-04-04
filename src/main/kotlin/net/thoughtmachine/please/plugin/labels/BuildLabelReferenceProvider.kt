@@ -27,7 +27,7 @@ class BuildLabelReferenceProvider : PsiSymbolReferenceProvider {
     ): Collection<PsiSymbolReference> {
         if (element !is PyStringLiteralExpression) return emptyList()
 
-        val file = element.containingFile
+        val file = element.containingFile ?: return emptyList()
         if (file !is PleaseFile) return emptyList()
 
         file.virtualFile ?: return emptyList() // Can't resolve for in-memory files
