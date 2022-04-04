@@ -110,7 +110,7 @@ interface PleaseRunConfigurationBase : DebuggableRunConfiguration {
 
 abstract class PleaseRunConfigurationProducerBase<T:PleaseRunConfigurationBase>: LazyRunConfigurationProducer<T>() {
     fun file(element: PsiElement) : PleaseFile? {
-        val file = element.containingFile
+        val file = element.containingFile ?: return null
         // Skip build defs as they don't define build rules
         if(file.fileType != PleaseBuildFileType) {
             return null
