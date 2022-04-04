@@ -31,7 +31,7 @@ object PleaseLineMarkerProvider : RunLineMarkerContributor() {
     // getInfo needs to apply the run info to the LeafPsiElement as that's what intellij demands. It looks for the
     // IDENT of the function call and applies the run actions to that.
     override fun getInfo(element: PsiElement): Info? {
-        val file = element.containingFile
+        val file = element.containingFile ?: return null
         // Skip build defs as they don't define build rules
         if(file.fileType != PleaseBuildFileType) {
             return null

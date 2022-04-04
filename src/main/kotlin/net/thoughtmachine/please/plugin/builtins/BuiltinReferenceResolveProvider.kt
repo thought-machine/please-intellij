@@ -11,7 +11,8 @@ import net.thoughtmachine.please.plugin.PleaseLanguage
 
 class BuiltinReferenceResolveProvider : PyReferenceResolveProvider {
     override fun resolveName(expression: PyQualifiedExpression, context: TypeEvalContext): List<RatedResolveResult> {
-        if (expression.containingFile.language !is PleaseLanguage) {
+        val file = expression.containingFile ?: return emptyList()
+        if (file.language !is PleaseLanguage) {
             return emptyList()
         }
 

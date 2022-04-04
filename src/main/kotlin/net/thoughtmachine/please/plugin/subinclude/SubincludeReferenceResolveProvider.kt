@@ -12,7 +12,7 @@ import net.thoughtmachine.please.plugin.PleaseFile
 
 object SubincludeReferenceResolveProvider : PyReferenceResolveProvider {
     override fun resolveName(expression: PyQualifiedExpression, context: TypeEvalContext): List<RatedResolveResult> {
-        val file = expression.containingFile
+        val file = expression.containingFile ?: return emptyList()
         if (file !is PleaseFile) {
             return emptyList()
         }

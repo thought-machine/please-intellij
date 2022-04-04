@@ -95,8 +95,8 @@ object GoTestConfigProducer : LazyRunConfigurationProducer<PleaseTestConfigurati
                     return null
                 }
                 val receiverType = GoPsiImplUtil.unwrapPointerIfNeeded(parent.receiverType) ?: return null
-
-                val subTestName = findSuiteTestName(element.containingFile as GoFile, (receiverType.resolve(parent) as GoTypeSpec).name!!)
+                val file = element.containingFile ?: return null
+                val subTestName = findSuiteTestName(file as GoFile, (receiverType.resolve(parent) as GoTypeSpec).name!!)
                 return "$subTestName/${parent.name}"
             }
             is GoSpecType -> {
@@ -133,9 +133,10 @@ object GoTestConfigProducer : LazyRunConfigurationProducer<PleaseTestConfigurati
         }
 
         val element = sourceElement.get()
-        val target = resolveFileToTarget(element.containingFile) ?: return false
+        val file = element.containingFile ?: return false
+        val target = resolveFileToTarget(file) ?: return false
         val test = getTestName(element) ?: return false
-        val root = findPleaseRoot(element.containingFile.virtualFile) ?: return false
+        val root = findPleaseRoot(file.virtualFile) ?: return false
 
         configuration.args.target = target
         configuration.args.tests = test
