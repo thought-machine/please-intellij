@@ -19,9 +19,13 @@ import com.intellij.openapi.util.Ref
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
+import net.thoughtmachine.please.plugin.graph.BuildLabel
+import net.thoughtmachine.please.plugin.graph.BuildTarget
+import net.thoughtmachine.please.plugin.graph.PackageIndexer
 import net.thoughtmachine.please.plugin.pleasecommandline.Please
 import net.thoughtmachine.please.plugin.runconfiguration.PleaseTestConfiguration
 import net.thoughtmachine.please.plugin.runconfiguration.PleaseTestConfigurationType
+import kotlin.io.path.pathString
 
 object GoTestConfigProducer : LazyRunConfigurationProducer<PleaseTestConfiguration>(){
     private val roots = mutableMapOf<VirtualFile, VirtualFile>()
@@ -58,19 +62,11 @@ object GoTestConfigProducer : LazyRunConfigurationProducer<PleaseTestConfigurati
         val pleaseRoot = findPleaseRoot(file.virtualFile) ?: return null
         val path = pleaseRoot.toNioPath().relativize(file.virtualFile.toNioPath())
 
+        val plzFile = PackageIndexer.lookup(file.project, pleaseRoot.path, path.parent.pathString) ?: return null
 
-        val cmd = GeneralCommandLine(Please(file.project).query("whatinputs", path.toString()))
-        cmd.workDirectory = file.project.guessProjectDir()!!.toNioPath().toFile()
-        cmd.withRedirectErrorStream(true)
-
-        val process = ProcessHandlerFactory.getInstance().createProcessHandler(cmd)
-
-        if(process.process.waitFor() == 0) {
-            return process.process.inputStream.bufferedReader().lines().findFirst().orElse(null)
-        }
-        val error = String(process.process.inputStream.readAllBytes())
-        Notifications.Bus.notify(Notification("Please", "Failed to update subincludes", error, NotificationType.ERROR))
-        return null
+        val name = plzFile.targets().find { it.srcs().contains(file.name) }?.name ?: return null
+        val pkgLabel = plzFile.getPleasePackage()?.pkgLabel ?: return null
+        return BuildLabel(name, pkgLabel.name, pkgLabel.subrepo).toString()
     }
 
     // This is quite the hack but the testify functions above populate the map and we can fetch the usages here

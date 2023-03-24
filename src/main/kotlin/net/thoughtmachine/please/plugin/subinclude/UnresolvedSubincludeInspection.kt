@@ -105,9 +105,6 @@ class ResolveSubincludeBackgroundTask(private var file: PleaseFile, private var 
                     indicator.text2 = "plz query outputs $it"
                     PleaseSubincludeManager.resolveSubinclude(file, it)
                 }
-            } else {
-                val error = String(process.process.inputStream.readAllBytes())
-                Notifications.Bus.notify(Notification("Please", "Failed to update subincludes", error, NotificationType.ERROR))
             }
         } catch (_: IndexNotReadyException) {
             // Ignore this as it's a race condition with the check above which happens occasionally. Re-focusing the
