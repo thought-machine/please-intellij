@@ -9,12 +9,17 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.impl.source.tree.LeafPsiElement
 import com.intellij.util.castSafelyTo
 import com.jetbrains.python.PyTokenTypes
+import com.jetbrains.python.debugger.PySignature.NamedParameter
 import com.jetbrains.python.inspections.PyInspectionExtension
 import com.jetbrains.python.psi.PyCallExpression
 import com.jetbrains.python.psi.PyFile
+import com.jetbrains.python.psi.PyListLiteralExpression
+import com.jetbrains.python.psi.PyNamedParameter
 import com.jetbrains.python.psi.PyRecursiveElementVisitor
 import com.jetbrains.python.psi.PyStringLiteralExpression
+import com.jetbrains.python.psi.impl.PyDictLiteralExpressionImpl
 import com.jetbrains.python.psi.impl.PyFileImpl
+import com.jetbrains.python.psi.impl.PyListLiteralExpressionImpl
 import net.thoughtmachine.please.plugin.graph.Package
 import net.thoughtmachine.please.plugin.graph.PackageIndexer
 import net.thoughtmachine.please.plugin.graph.PackageService
@@ -169,6 +174,22 @@ private class TargetVisitor : PyRecursiveElementVisitor() {
 data class PsiTarget(val name : String, val element: PyCallExpression) : PsiElement by element {
     fun kind() : String {
         return element.callee?.text ?: ""
+    }
+
+    fun srcs(): List<String> {
+        val srcsExpr = element.getKeywordArgument("srcs") ?: return emptyList()
+        if (srcsExpr is PyListLiteralExpression) {
+            return srcsExpr.elements
+                .mapNotNull { it.castSafelyTo<PyStringLiteralExpression>() }
+                .map { it.stringValue }
+        } else if (srcsExpr is PyDictLiteralExpressionImpl) {
+            return srcsExpr.elements
+                .mapNotNull { it.castSafelyTo<PyListLiteralExpression>() }
+                .flatMap { it.elements.toList() }
+                .mapNotNull { it.castSafelyTo<PyStringLiteralExpression>()}
+                .map { it.stringValue }
+        }
+        return emptyList()
     }
 }
 

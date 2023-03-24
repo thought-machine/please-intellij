@@ -67,7 +67,8 @@ def subinclude(target:str):
     pass
 def load(target:str, names:str=None):
     pass
-def subrepo(name:str, dep:str='', path:str=None, config:str=None, bazel_compat:bool=False, arch:str=None, plugin:bool=False):
+def subrepo(name:str, dep:str='', path:str=None, config:str=None, bazel_compat:bool=False, arch:str=None,
+    plugin:bool=False, package_root:str=None):
     pass
 
 
@@ -101,7 +102,7 @@ def dict(d):
     fail('dict is not callable')
 
 
-def glob(include:list, exclude:list&excludes=[], hidden:bool=CONFIG.BAZEL_COMPATIBILITY, include_symlinks:bool=not CONFIG.FF_EXCLUDE_GLOB_SYMLINKS) -> list:
+def glob(include:list|str, exclude:list|str&excludes=[], hidden:bool=CONFIG.BAZEL_COMPATIBILITY, include_symlinks:bool=False, allow_empty:bool=False) -> list:
     pass
 
 
@@ -128,6 +129,8 @@ def get_base_path(label:str=None, subinclude_context:bool=None) -> str:
 def package_name(label:str=None, subinclude_context:bool=None) -> str:
     pass
 def subrepo_name(label:str=None, subinclude_context:bool=None) -> str:
+    pass
+def looks_like_build_label(label:str) -> bool:
     pass
 
 def canonicalise(label:str, subinclude_context:bool=None) -> str:
@@ -218,17 +221,6 @@ def dirname(p:str) -> str:
     return before
 
 
-def _deprecated_exception(msg):
-    log.warning('Builtin exception types are deprecated, please use fail() instead. ' +
-                'See https://github.com/thought-machine/please/issues/1598 for more information.')
-    return str(msg)
-
-# These are deprecated and will be removed in v17.
-ParseError = _deprecated_exception
-ConfigError = _deprecated_exception
-ValueError = _deprecated_exception
-
-
 # Post-build callback functions.
 def get_labels(name:str, prefix:str, all:bool=False, transitive=True) -> list:
     pass
@@ -281,5 +273,3 @@ def is_semver(s:str) -> bool:
 
 def semver_check(version:str, constraint:str) -> bool:
     pass
-
-CONFIG = {}

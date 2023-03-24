@@ -48,9 +48,6 @@ object PleaseSubincludeManager {
 
             resolvedSubincludes[subinclude] = files
             return files
-        } else {
-            val error = String(process.process.inputStream.readAllBytes())
-            Notifications.Bus.notify(Notification("Please", "Failed to update subincludes", error, NotificationType.ERROR))
         }
 
         return emptySet()

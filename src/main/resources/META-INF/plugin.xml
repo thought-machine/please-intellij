@@ -35,7 +35,6 @@
         <completion.contributor language="Python" implementationClass="net.thoughtmachine.please.plugin.subinclude.SubincludeCompletionContributor"/>
         <localInspection language="Please" displayName="Please: Unresolved subinclude" enabledByDefault="true" level="ERROR" groupName="Please"
                          implementationClass="net.thoughtmachine.please.plugin.subinclude.UnresolvedSubincludeInspection"/>
-        <editorFactoryListener implementation="net.thoughtmachine.please.plugin.subinclude.SubincludeEditorFactoryListener"/>
         <!-- Build labels -->
         <completion.contributor language="Python" implementationClass="net.thoughtmachine.please.plugin.labels.BuildLabelCompletionContributor"/>
         <!-- Builtin -->
