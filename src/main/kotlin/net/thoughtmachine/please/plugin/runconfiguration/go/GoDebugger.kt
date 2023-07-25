@@ -13,7 +13,7 @@ import java.net.InetSocketAddress
 
 object GoDebugger : PleaseDebugger {
     override fun canRun(target: BuildTarget): Boolean {
-        return target.kind == "go_test" || target.kind == "go_binary"
+        return true
     }
 
     override fun createDebugProcess(
